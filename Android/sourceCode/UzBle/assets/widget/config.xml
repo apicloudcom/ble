@@ -1,0 +1,14 @@
+<widget id="A0000000000001"  version="0.0.1">
+    <name>ModuleDemo</name>
+    <description>A sample of APICloud module extension.</description>
+    <author email="developer@apicloud.com" href="http://www.apicloud.com">
+        developer
+    </author>
+    <content src="index.html" />
+    <access origin="*" />
+    <preference name="bounces" value="true" />
+    <preference name="customRefreshHeader" value="cusHeader" />
+    <feature name="wx">
+        <param name="apikey" value="*********" />
+    </feature>
+</widget>

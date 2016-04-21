@@ -1,0 +1,25 @@
+{
+  "DVTSourceControlWorkspaceBlueprintPrimaryRemoteRepositoryKey" : "bb1f6edc-2750-b443-bb15-590855bc9021",
+  "DVTSourceControlWorkspaceBlueprintWorkingCopyRepositoryLocationsKey" : {
+    "bb1f6edc-2750-b443-bb15-590855bc9021" : {
+
+    }
+  },
+  "DVTSourceControlWorkspaceBlueprintWorkingCopyStatesKey" : {
+    "bb1f6edc-2750-b443-bb15-590855bc9021" : 0
+  },
+  "DVTSourceControlWorkspaceBlueprintIdentifierKey" : "364200C8-DB1F-41E0-AEAA-E5A5453E180D",
+  "DVTSourceControlWorkspaceBlueprintWorkingCopyPathsKey" : {
+    "bb1f6edc-2750-b443-bb15-590855bc9021" : "uzModules_IOS\/"
+  },
+  "DVTSourceControlWorkspaceBlueprintNameKey" : "Bluetooth4",
+  "DVTSourceControlWorkspaceBlueprintVersion" : 204,
+  "DVTSourceControlWorkspaceBlueprintRelativePathToProjectKey" : "trunk\/uzModulesProjects\/Bluetooth4\/Bluetooth4.xcodeproj",
+  "DVTSourceControlWorkspaceBlueprintRemoteRepositoriesKey" : [
+    {
+      "DVTSourceControlWorkspaceBlueprintRemoteRepositoryURLKey" : "https:\/\/192.168.13.120:4443\/svn\/uzModules_IOS",
+      "DVTSourceControlWorkspaceBlueprintRemoteRepositorySystemKey" : "com.apple.dt.Xcode.sourcecontrol.Subversion",
+      "DVTSourceControlWorkspaceBlueprintRemoteRepositoryIdentifierKey" : "bb1f6edc-2750-b443-bb15-590855bc9021"
+    }
+  ]
+}

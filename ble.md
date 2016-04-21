@@ -1,8 +1,7 @@
-# 概述
-
-蓝牙4.0模块源码（含iOS和Android）
-
-APICloud 的 ble 模块是一个蓝牙模块。它封装了 iOS 和 android 两个系统平台上的蓝牙4.0的相关功能接口，由于两个平台对蓝牙4.0开放接口的不一致性，所以本模块对原生提供的接口做了少许调整，以使两个平台做到统一规范，方便 APICloud 平台的开发者调用，达到一条代码即可生成适用于两个平台的目的。蓝牙4.0设备繁杂多样，每个蓝牙厂商可能提供的服务（service）、特征（Characteristics）、描述符（Descriptor）都不尽相同。所以使用本模块时可能需要多次联调，为方便广大开发者迅速的开发蓝牙功能，APICloud 官方特将此模块源码开源。APICloud 的开发者可配合原生开发者联调测试蓝牙4.0的功能，加快开发进度。 
+/*
+Title: ble
+Description: ble
+*/
 
 <ul id="tab" class="clearfix">
 	<li class="active"><a href="#method-content">Method</a></li>
@@ -30,7 +29,7 @@ APICloud 的 ble 模块是一个蓝牙模块。它封装了 iOS 和 android 两�
 [writeValueForDescriptor](#18)
 </div>
 
-#**模块概述**
+#**概述**
 
 **背景**
 
