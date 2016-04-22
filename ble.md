@@ -1046,7 +1046,7 @@ characteristicUUID
 value
 
 - 类型：字符串
-- 描述：要写入的数据 
+- 描述：要写入的数据 ，十六进制的字符串
 
 ##callback(ret,err)
 
@@ -1154,7 +1154,7 @@ descriptorUUID
 value
 
 - 类型：字符串
-- 描述：要发送的数据
+- 描述：要发送的数据，十六进制的字符串
 
 ##callback(ret,err)
 

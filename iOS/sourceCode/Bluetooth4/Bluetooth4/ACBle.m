@@ -446,14 +446,14 @@
         if (myService) {
             CBCharacteristic *characteristic = [self getCharacteristicInService:myService withUUID:characteristicUUID];
             if(characteristic){
-                NSData *valueData = [[NSData alloc] initWithBase64EncodedString:value options:0];
+                NSData *valueData = [self dataFormHexString:value];
                 if (valueData) {
                     CBCharacteristicWriteType type = CBCharacteristicWriteWithResponse;
                     if((characteristic.properties == CBCharacteristicPropertyWriteWithoutResponse)) {
                         type = CBCharacteristicWriteWithoutResponse;
                     } else if((characteristic.properties == CBCharacteristicPropertyWrite)) {
                         type = CBCharacteristicWriteWithResponse;
-                    }usleep(20 * 1000);
+                    }
                     [peripheral writeValue:valueData forCharacteristic:characteristic type:type];
                 }
             } else {
@@ -798,11 +798,6 @@
     for (CBCharacteristic *characteristic in characteristicsAry) {
         NSMutableDictionary *characterInfo = [self getCharacteristicsDict:characteristic];
         [allCharacteristics addObject:characterInfo];
-        continue;
-        NSString *characteristicsUUID = characteristic.UUID.UUIDString;
-        if ([characteristicsUUID isKindOfClass:[NSString class]] && characteristicsUUID.length>0) {
-            [allCharacteristics addObject:characteristicsUUID];
-        }
     }
     return allCharacteristics;
 }
@@ -893,7 +888,7 @@
     [characteristicDict setValue:characterUUID forKey:@"uuid"];
     NSData *characterData = characteristic.value;
     if (characterData) {
-        NSString *value = [characterData base64EncodedStringWithOptions:0];
+        NSString *value = [self hexStringFromData:characterData];
         [characteristicDict setValue:value forKey:@"value"];
     }
     NSMutableArray *descriptorAry = [self getAllDescriptorInfo:characteristic.descriptors];
@@ -1036,5 +1031,106 @@
         [_allPeripheral removeAllObjects];
         self.allPeripheral = nil;
     }
+}
+
+- (NSData *)replaceNoUtf8:(NSData *)data {
+    char aa[] = {'A','A','A','A','A','A'};                      //utf8最多6个字符，当前方法未使用
+    NSMutableData *md = [NSMutableData dataWithData:data];
+    int loc = 0;
+    while(loc < [md length])
+    {
+        char buffer;
+        [md getBytes:&buffer range:NSMakeRange(loc, 1)];
+        if((buffer & 0x80) == 0)
+        {
+            loc++;
+            continue;
+        }
+        else if((buffer & 0xE0) == 0xC0)
+        {
+            loc++;
+            [md getBytes:&buffer range:NSMakeRange(loc, 1)];
+            if((buffer & 0xC0) == 0x80)
+            {
+                loc++;
+                continue;
+            }
+            loc--;
+            //非法字符，将这个字符（一个byte）替换为A
+            [md replaceBytesInRange:NSMakeRange(loc, 1) withBytes:aa length:1];
+            loc++;
+            continue;
+        }
+        else if((buffer & 0xF0) == 0xE0)
+        {
+            loc++;
+            [md getBytes:&buffer range:NSMakeRange(loc, 1)];
+            if((buffer & 0xC0) == 0x80)
+            {
+                loc++;
+                [md getBytes:&buffer range:NSMakeRange(loc, 1)];
+                if((buffer & 0xC0) == 0x80)
+                {
+                    loc++;
+                    continue;
+                }
+                loc--;
+            }
+            loc--;
+            //非法字符，将这个字符（一个byte）替换为A
+            [md replaceBytesInRange:NSMakeRange(loc, 1) withBytes:aa length:1];
+            loc++;
+            continue;
+        }
+        else
+        {
+            //非法字符，将这个字符（一个byte）替换为A
+            [md replaceBytesInRange:NSMakeRange(loc, 1) withBytes:aa length:1];
+            loc++;
+            continue;
+        }
+    }
+    
+    return md;
+}
+- (NSString *)hexStringFromData:(NSData *)data {
+    return [[[[NSString stringWithFormat:@"%@",data]
+              stringByReplacingOccurrencesOfString: @"<" withString: @""]
+             stringByReplacingOccurrencesOfString: @">" withString: @""]
+            stringByReplacingOccurrencesOfString: @" " withString: @""];
+}
+
+- (NSData*)dataFormHexString:(NSString *)hexString {
+    hexString=[[hexString uppercaseString] stringByReplacingOccurrencesOfString:@" " withString:@""];
+    if (!(hexString && [hexString length] > 0 && [hexString length]%2 == 0)) {
+        return nil;
+    }
+    Byte tempbyt[1]={0};
+    NSMutableData* bytes=[NSMutableData data];
+    for(int i=0;i<[hexString length];i++)
+    {
+        unichar hex_char1 = [hexString characterAtIndex:i]; ////两位16进制数中的第一位(高位*16)
+        int int_ch1;
+        if(hex_char1 >= '0' && hex_char1 <='9')
+            int_ch1 = (hex_char1-48)*16;   //// 0 的Ascll - 48
+        else if(hex_char1 >= 'A' && hex_char1 <='F')
+            int_ch1 = (hex_char1-55)*16; //// A 的Ascll - 65
+        else
+            return nil;
+        i++;
+        
+        unichar hex_char2 = [hexString characterAtIndex:i]; ///两位16进制数中的第二位(低位)
+        int int_ch2;
+        if(hex_char2 >= '0' && hex_char2 <='9')
+            int_ch2 = (hex_char2-48); //// 0 的Ascll - 48
+        else if(hex_char2 >= 'A' && hex_char2 <='F')
+            int_ch2 = hex_char2-55; //// A 的Ascll - 65
+        else
+            return nil;
+        
+        tempbyt[0] = int_ch1+int_ch2;  ///将转化后的数放入Byte数组里
+        [bytes appendBytes:tempbyt length:1];
+    }
+    return bytes;
 }
 @end
