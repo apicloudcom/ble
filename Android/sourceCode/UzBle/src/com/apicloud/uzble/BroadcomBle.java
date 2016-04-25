@@ -4,7 +4,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
-import org.apache.commons.codec.DecoderException;
 import org.apache.commons.codec.binary.Hex;
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -22,7 +21,7 @@ import com.broadcom.bt.gatt.BluetoothGattDescriptor;
 import com.broadcom.bt.gatt.BluetoothGattService;
 import com.uzmap.pkg.uzcore.uzmodule.UZModuleContext;
 
-public class BroadcomBle implements IBle{
+public class BroadcomBle implements IBle {
 	public static final UUID DESC_CCC = UUID
 			.fromString("00002902-0000-1000-8000-00805f9b34fb");
 	private BluetoothAdapter mBluetoothAdapter;
@@ -242,7 +241,7 @@ public class BroadcomBle implements IBle{
 			BluetoothGattCharacteristic characteristic = characteristicWrite(
 					moduleContext, address, serviceUUID, characteristicUUID);
 			if (characteristic != null) {
-				characteristic.setValue(value);
+				characteristic.setValue(value(value));
 				boolean status = mBluetoothGatt
 						.writeCharacteristic(characteristic);
 				if (!status) {
@@ -250,6 +249,20 @@ public class BroadcomBle implements IBle{
 				}
 			}
 		}
+	}
+
+	private byte[] value(String valueStr) {
+		byte[] value = new byte[valueStr.length() / 2];
+		for (int i = 0; i < value.length; i++) {
+			if (2 * i + 1 < valueStr.length()) {
+				value[i] = Integer.valueOf(
+						valueStr.substring(2 * i, 2 * i + 2), 16).byteValue();
+			} else {
+				value[i] = Integer.valueOf(
+						String.valueOf(valueStr.charAt(2 * i)), 16).byteValue();
+			}
+		}
+		return value;
 	}
 
 	@Override
@@ -261,13 +274,8 @@ public class BroadcomBle implements IBle{
 				address, serviceUUID, characteristicUUID, descriptorUUID);
 		if (mBluetoothGatt != null) {
 			if (descriptor != null) {
-				try {
-					descriptor.setValue(Hex.decodeHex(value.toCharArray()));
-					if (!mBluetoothGatt.writeDescriptor(descriptor)) {
-						errcodeCallBack(moduleContext, -1);
-					}
-				} catch (DecoderException e) {
-					e.printStackTrace();
+				descriptor.setValue(value(value));
+				if (!mBluetoothGatt.writeDescriptor(descriptor)) {
 					errcodeCallBack(moduleContext, -1);
 				}
 			} else {
@@ -285,7 +293,7 @@ public class BroadcomBle implements IBle{
 
 		@Override
 		public void onServiceDisconnected(int profile) {
-			for ( BluetoothDevice d : mBluetoothGatt.getConnectedDevices() ) {
+			for (BluetoothDevice d : mBluetoothGatt.getConnectedDevices()) {
 				mBluetoothGatt.cancelConnection(d);
 			}
 			mBluetoothGatt = null;
