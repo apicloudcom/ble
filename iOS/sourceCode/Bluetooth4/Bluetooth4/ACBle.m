@@ -49,6 +49,9 @@
     if (setNotifyCbid >= 0) {
         [self deleteCallback:setNotifyCbid];
     }
+    if (readValueForCharacteristicCbid >= 0) {
+        [self deleteCallback:readValueForCharacteristicCbid];
+    }
     [self cleanStoredPeripheral];
 }
 
@@ -61,6 +64,7 @@
     }
     initCbid = -1;
     setNotifyCbid = -1;
+    readValueForCharacteristicCbid = -1;
     return self;
 }
 
@@ -301,23 +305,20 @@
 }
 
 - (void)setNotify:(NSDictionary *)paramsDict_ {
-    if (setNotifyCbid >= 0) {
-        [self deleteCallback:setNotifyCbid];
-    }
     setNotifyCbid = [paramsDict_ integerValueForKey:@"cbId" defaultValue:-1];
     NSString *peripheralUUID = [paramsDict_ stringValueForKey:@"peripheralUUID" defaultValue:nil];
     if (peripheralUUID.length == 0) {
-        [self callbackCodeInfo:NO withCode:1 andCbid:setNotifyCbid doDelete:NO];
+        [self callbackCodeInfo:NO withCode:1 andCbid:setNotifyCbid doDelete:YES];
         return;
     }
     NSString *serviceUUID = [paramsDict_ stringValueForKey:@"serviceUUID" defaultValue:nil];
     if (serviceUUID.length == 0) {
-        [self callbackCodeInfo:NO withCode:2 andCbid:setNotifyCbid doDelete:NO];
+        [self callbackCodeInfo:NO withCode:2 andCbid:setNotifyCbid doDelete:YES];
         return;
     }
     NSString *characteristicUUID = [paramsDict_ stringValueForKey:@"characteristicUUID" defaultValue:nil];
     if (characteristicUUID.length == 0) {
-        [self callbackCodeInfo:NO withCode:3 andCbid:setNotifyCbid doDelete:NO];
+        [self callbackCodeInfo:NO withCode:3 andCbid:setNotifyCbid doDelete:YES];
         return;
     }
     CBPeripheral *peripheral = [_allPeripheral objectForKey:peripheralUUID];
@@ -328,13 +329,13 @@
             if(characteristic){
                 [peripheral setNotifyValue:YES forCharacteristic:characteristic];
             } else {
-                [self callbackCodeInfo:NO withCode:4 andCbid:setNotifyCbid doDelete:NO];
+                [self callbackCodeInfo:NO withCode:4 andCbid:setNotifyCbid doDelete:YES];
             }
         } else {
-            [self callbackCodeInfo:NO withCode:5 andCbid:setNotifyCbid doDelete:NO];
+            [self callbackCodeInfo:NO withCode:5 andCbid:setNotifyCbid doDelete:YES];
         }
     } else {
-        [self callbackCodeInfo:NO withCode:6 andCbid:setNotifyCbid doDelete:NO];
+        [self callbackCodeInfo:NO withCode:6 andCbid:setNotifyCbid doDelete:YES];
     }
 }
 
@@ -555,28 +556,33 @@
     }
 }
 
-//按特征读取数据
+//按特征读取数据，监听后会不断的有心跳数据包回调
 - (void)peripheral:(CBPeripheral *)peripheral didUpdateValueForCharacteristic:(CBCharacteristic *)characteristic error:(NSError *)error {
     NSMutableDictionary *characteristicDict = [NSMutableDictionary dictionary];
     NSString *characterUUID = characteristic.UUID.UUIDString;
     if (!characterUUID) {
-        [self callbackCodeInfo:NO withCode:-1 andCbid:readValueForCharacteristicCbid doDelete:NO];
+        [self callbackCodeInfo:NO withCode:-1 andCbid:readValueForCharacteristicCbid doDelete:YES];
         return;
     }
     //[characteristicDict setValue:characterUUID forKey:@"uuid"];
     if(error) {
-        [self callbackCodeInfo:NO withCode:-1 andCbid:readValueForCharacteristicCbid doDelete:NO];
+        [self callbackCodeInfo:NO withCode:-1 andCbid:readValueForCharacteristicCbid doDelete:YES];
     } else {
         NSMutableDictionary *characteristics = [self getCharacteristicsDict:characteristic];
         [characteristicDict setValue:characteristics forKey:@"characteristic"];
         [characteristicDict setValue:[NSNumber numberWithBool:YES] forKey:@"status"];
-        [self sendResultEventWithCallbackId:readValueForCharacteristicCbid dataDict:characteristicDict errDict:nil doDelete:YES];
+        if (readValueForCharacteristicCbid >= 0) {
+            [self sendResultEventWithCallbackId:readValueForCharacteristicCbid dataDict:characteristicDict errDict:nil doDelete:YES];
+        }
+        if (setNotifyCbid >= 0) {
+            [self sendResultEventWithCallbackId:setNotifyCbid dataDict:characteristicDict errDict:nil doDelete:NO];
+        }
     }
 }
 
-//监听外围设备后有心跳数据包发送时的回调
+//监听外围设备成功的回调
 - (void)peripheral:(CBPeripheral *)peripheral didUpdateNotificationStateForCharacteristic:(CBCharacteristic *)characteristic error:(nullable NSError *)error {
-    NSMutableDictionary *characteristicDict = [NSMutableDictionary dictionary];
+    //NSMutableDictionary *characteristicDict = [NSMutableDictionary dictionary];
     NSString *characterUUID = characteristic.UUID.UUIDString;
     if (!characterUUID) {
         [self callbackCodeInfo:NO withCode:-1 andCbid:setNotifyCbid doDelete:NO];
@@ -586,10 +592,10 @@
     if(error) {
         [self callbackCodeInfo:NO withCode:-1 andCbid:setNotifyCbid doDelete:NO];
     } else {
-        NSMutableDictionary *characteristics = [self getCharacteristicsDict:characteristic];
-        [characteristicDict setValue:characteristics forKey:@"characteristic"];
-        [characteristicDict setValue:[NSNumber numberWithBool:YES] forKey:@"status"];
-        [self sendResultEventWithCallbackId:setNotifyCbid dataDict:characteristicDict errDict:nil doDelete:YES];
+        //NSMutableDictionary *characteristics = [self getCharacteristicsDict:characteristic];
+        //[characteristicDict setValue:characteristics forKey:@"characteristic"];
+        //[characteristicDict setValue:[NSNumber numberWithBool:YES] forKey:@"status"];
+        //[self sendResultEventWithCallbackId:setNotifyCbid dataDict:characteristicDict errDict:nil doDelete:NO];
     }
 }
 
@@ -778,7 +784,9 @@
         [peripheralInfo setValue:RSSI forKey:@"rssi"];
     }
     NSMutableArray *allServiceUid = [self getAllServiceInfoAry:singlePeripheral.services];
-    [peripheralInfo setObject:allServiceUid forKey:@"services"];
+    if (allServiceUid.count > 0) {
+        [peripheralInfo setObject:allServiceUid forKey:@"services"];
+    }
     return peripheralInfo;
 }
 //收集指定设备的所有服务（service）
