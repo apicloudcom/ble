@@ -18,7 +18,7 @@
     <body>
     </body>
     <script type='text/javascript'>
-    
+    var addrs = null;
     function initBle(){
 	     var ble = api.require('ble');
 		ble.initManager(function( ret ){
@@ -38,6 +38,60 @@
 		    }
 		});
     }
+    
+    function connects(){
+    	var ble = api.require('ble');
+    	addrs = ['A0:E6:F8:4E:B0:EC', 'A0:E6:F8:4C:E9:0C', 'A0:E6:F8:4C:C6:C8'];
+    	//addrs = ['A0:E6:F8:4E:B0:EC'];
+    	ble.connectPeripherals({
+					peripheralUUIDs : addrs
+				}, function(ret, err) {
+					console.log("連接成功 return:" + JSON.stringify(ret))
+					if (ret.status) {
+						//	alert(ret.peripheralUUID + "连接成功！");
+						ble.discoverService({
+							peripheralUUID : ret.peripheralUUID
+						}, function(ret) {
+							if (ret) {
+								console.log("获取Service return:" + JSON.stringify(ret))
+								ble.discoverCharacteristics({
+									peripheralUUID : 'A0:E6:F8:4E:B0:EC',
+									serviceUUID : "0000fff0-0000-1000-8000-00805f9b34fb"
+								}, function(ret) {
+									if (ret) {
+										console.log("获取Characteristics return:" + JSON.stringify(ret))
+									}
+								});
+							}
+						});
+					} else {
+						console.log(JSON.stringify(err))
+					}
+				});
+    }
+    
+    function notify() {
+    var ble = api.require('ble');
+					for ( i = 0; i < addrs.length; i++) {
+						console.log("setSimpleNotify peripheralUUID:" + addrs[i])
+						ble.setSimpleNotify({
+							peripheralUUID : addrs[i],
+							serviceUUID : '0000fff0-0000-1000-8000-00805f9b34fb',
+							characteristicUUID : '0000fff1-0000-1000-8000-00805f9b34fb'
+						}, function(ret, err) {
+							//console.log(JSON.stringify(ret) + "notify-ret")
+							//console.log(JSON.stringify(err) + "notify-err")
+						});
+					}
+			}
+
+			function stopNotify() {
+			var ble = api.require('ble');
+				ble.getAllSimpleNotifyData(function(ret) {
+					console.log("获取返回值" + JSON.stringify(ret))
+					//ble.clearAllSimpleNotifyData();
+				});
+			}
     
     function getBlesInfo(){
 	     var ble = api.require('ble');
@@ -63,7 +117,7 @@
     function connect(){
 	     var ble = api.require('ble');
 		ble.connect({
-			peripheralUUID:'D3:44:BD:7E:98:4A'	
+			peripheralUUID:'A0:E6:F8:4E:B0:EC'	
 		},function( ret,err ){
 		   if(ret.status){
 		   		discoverService();
@@ -76,7 +130,7 @@
     function disconnect(){
 	     var ble = api.require('ble');
 		ble.disconnect({
-			peripheralUUID:'D3:44:BD:7E:98:4A'	
+			peripheralUUID:'A0:E6:F8:4E:B0:EC'	
 		},function( ret){
 		   api.alert( {msg:JSON.stringify( ret )});
 		});
@@ -85,7 +139,7 @@
     function isConnected(){
 	     var ble = api.require('ble');
 		ble.isConnected({
-			peripheralUUID:'D3:44:BD:7E:98:4A'	
+			peripheralUUID:'A0:E6:F8:4E:B0:EC'	
 		},function( ret){
 		   api.alert( {msg:JSON.stringify( ret )});
 		});
@@ -94,7 +148,7 @@
     function discoverService(){
 	     var ble = api.require('ble');
 		ble.discoverService({
-			peripheralUUID:'D3:44:BD:7E:98:4A'	
+			peripheralUUID:'A0:E6:F8:4E:B0:EC'	
 		},function( ret,err){
 		   api.alert( {msg:JSON.stringify( ret )});
 		   api.alert( {msg:JSON.stringify( err )});
@@ -104,8 +158,8 @@
     function discoverCharacteristics(){
 	     var ble = api.require('ble');
 		ble.discoverCharacteristics({
-			peripheralUUID:'D3:44:BD:7E:98:4A',
-			serviceUUID:'0000180f-0000-1000-8000-00805f9b34fb'
+			peripheralUUID:'A0:E6:F8:4E:B0:EC',
+			serviceUUID:'00001800-0000-1000-8000-00805f9b34fb'
 		},function( ret,err){
 		   api.alert( {msg:JSON.stringify( ret )});
 		   api.alert( {msg:JSON.stringify( err )});
@@ -124,10 +178,23 @@
 		});
     }
     
+    function writeValueForCharacteristic(){
+	     var ble = api.require('ble');
+		ble.writeValueForCharacteristic({
+			value:'123456789',
+			peripheralUUID:'68:C9:0B:14:5C:0F',
+			serviceUUID:'00001800-0000-1000-8000-00805f9b34fb',
+			characteristicUUID:'00002a00-0000-1000-8000-00805f9b34fb'
+		},function( ret,err){
+		   api.alert( {msg:JSON.stringify( ret )});
+		   api.alert( {msg:JSON.stringify( err )});
+		});
+    }
+    
     function readValueForCharacteristic(){
 	     var ble = api.require('ble');
 		ble.readValueForCharacteristic({
-			peripheralUUID:'CF:23:98:C1:53:BC',
+			peripheralUUID:'68:C9:0B:14:5C:0F',
 			serviceUUID:'00001800-0000-1000-8000-00805f9b34fb',
 			characteristicUUID:'00002a00-0000-1000-8000-00805f9b34fb'
 		},function( ret,err){
@@ -207,6 +274,18 @@
 			
 			<div class='itemtitle'>14.connectB</div>
 			<div class="clickbtn" tapmode="active" onclick="connectB()" >connectB</div>
+			
+			<div class='itemtitle'>14.writeValueForCharacteristic</div>
+			<div class="clickbtn" tapmode="active" onclick="writeValueForCharacteristic()" >writeValueForCharacteristic</div>
+			
+			<div class='itemtitle'>14.connects</div>
+			<div class="clickbtn" tapmode="active" onclick="connects()" >connects</div>
+			
+			<div class='itemtitle'>14.notify</div>
+			<div class="clickbtn" tapmode="active" onclick="notify()" >notify</div>
+			
+			<div class='itemtitle'>14.stopNotify</div>
+			<div class="clickbtn" tapmode="active" onclick="stopNotify()" >stopNotify</div>
 		</div>
 	</div>
 </body>

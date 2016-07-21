@@ -87,6 +87,13 @@ public class UzBle extends UZModule {
 		}
 	}
 
+	public void jsmethod_connectPeripherals(UZModuleContext moduleContext) {
+		if (mIBle != null) {
+			JSONArray address = moduleContext.optJSONArray("peripheralUUIDs");
+			mIBle.connectPeripherals(moduleContext, address);
+		}
+	}
+
 	public void jsmethod_disconnect(UZModuleContext moduleContext) {
 		if (mIBle != null) {
 			String address = moduleContext.optString("peripheralUUID");
@@ -95,11 +102,12 @@ public class UzBle extends UZModule {
 	}
 
 	public void jsmethod_isConnected(UZModuleContext moduleContext) {
+		String address = moduleContext.optString("peripheralUUID");
 		if (mIBle != null) {
-			String address = moduleContext.optString("peripheralUUID");
-			statusCallBack(moduleContext, mIBle.isConnected(address));
+			isConnectedCallBack(moduleContext, mIBle.isConnected(address),
+					address);
 		} else {
-			statusCallBack(moduleContext, false);
+			isConnectedCallBack(moduleContext, false, address);
 		}
 	}
 
@@ -178,6 +186,43 @@ public class UzBle extends UZModule {
 					characteristicUUID);
 		} else {
 			errcodeCallBack(moduleContext, 6);
+		}
+	}
+
+	public void jsmethod_setSimpleNotify(UZModuleContext moduleContext) {
+		if (mIBle != null) {
+			String address = moduleContext.optString("peripheralUUID");
+			String serviceUUID = moduleContext.optString("serviceUUID");
+			String characteristicUUID = moduleContext
+					.optString("characteristicUUID");
+			if (address == null || address.length() == 0) {
+				errcodeCallBack(moduleContext, 1);
+				return;
+			}
+			if (serviceUUID == null || serviceUUID.length() == 0) {
+				errcodeCallBack(moduleContext, 2);
+				return;
+			}
+			if (characteristicUUID == null || characteristicUUID.length() == 0) {
+				errcodeCallBack(moduleContext, 3);
+				return;
+			}
+			mIBle.setSimpleNotify(moduleContext, address, serviceUUID,
+					characteristicUUID);
+		} else {
+			errcodeCallBack(moduleContext, 6);
+		}
+	}
+
+	public void jsmethod_getAllSimpleNotifyData(UZModuleContext moduleContext) {
+		if (mIBle != null) {
+			mIBle.getAllSimpleNotifyData(moduleContext);
+		}
+	}
+
+	public void jsmethod_clearAllSimpleNotifyData(UZModuleContext moduleContext) {
+		if (mIBle != null) {
+			mIBle.clearAllSimpleNotifyData();
 		}
 	}
 
@@ -368,6 +413,18 @@ public class UzBle extends UZModule {
 		JSONObject ret = new JSONObject();
 		try {
 			ret.put("status", status);
+			moduleContext.success(ret, false);
+		} catch (JSONException e) {
+			e.printStackTrace();
+		}
+	}
+
+	private void isConnectedCallBack(UZModuleContext moduleContext,
+			boolean status, String uuid) {
+		JSONObject ret = new JSONObject();
+		try {
+			ret.put("status", status);
+			ret.put("peripheralUUID", uuid);
 			moduleContext.success(ret, false);
 		} catch (JSONException e) {
 			e.printStackTrace();

@@ -26,8 +26,10 @@ public class SamsungBle implements IBle {
 	private BluetoothAdapter mBluetoothAdapter;
 	private BluetoothGatt mBluetoothGatt;
 	private Map<String, UZModuleContext> mConnectCallBackMap;
+	private Map<String, UZModuleContext> mConnectsCallBackMap;
 	private Map<String, UZModuleContext> mDiscoverServiceCallBackMap;
 	private Map<String, UZModuleContext> mNotifyCallBackMap;
+	private Map<String, Ble> mSimpleNotifyCallBackMap;
 	private Map<String, UZModuleContext> mReadCharacteristicCallBackMap;
 	private Map<String, UZModuleContext> mWriteCharacteristicCallBackMap;
 	private Map<String, UZModuleContext> mReadDescriptorCallBackMap;
@@ -35,6 +37,7 @@ public class SamsungBle implements IBle {
 	private Map<String, BleDeviceInfo> mScanBluetoothDeviceMap;
 	private Map<String, List<BluetoothGattService>> mServiceMap;
 	private boolean mIsScanning;
+	private JSONObject mNotifyData;
 
 	public SamsungBle(Context context) {
 		mBluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
@@ -49,6 +52,9 @@ public class SamsungBle implements IBle {
 		mReadDescriptorCallBackMap = new HashMap<String, UZModuleContext>();
 		mWriteCharacteristicCallBackMap = new HashMap<String, UZModuleContext>();
 		mWriteDescriptorCallBackMap = new HashMap<String, UZModuleContext>();
+		mSimpleNotifyCallBackMap = new HashMap<String, Ble>();
+		mConnectsCallBackMap = new HashMap<String, UZModuleContext>();
+		mNotifyData = new JSONObject();
 	}
 
 	@Override
@@ -95,13 +101,30 @@ public class SamsungBle implements IBle {
 	}
 
 	@Override
+	public void connectPeripherals(UZModuleContext moduleContext,
+			JSONArray address) {
+		if (address == null || address.length() == 0) {
+			connectCallBack(moduleContext, false, 1);
+			return;
+		}
+		for (int i = 0; i < address.length(); i++) {
+			mConnectsCallBackMap.put(address.optString(i), moduleContext);
+			BluetoothDevice device = mBluetoothAdapter.getRemoteDevice(address
+					.optString(i));
+			if (!mBluetoothGatt.connect(device, false)) {
+				connectsCallBack(moduleContext, false, 2, address.optString(i));
+			}
+		}
+	}
+
+	@Override
 	public void disconnect(UZModuleContext moduleContext, String address) {
 		BluetoothDevice device = mBluetoothAdapter.getRemoteDevice(address);
 		if (device != null) {
 			mBluetoothGatt.cancelConnection(device);
-			disconnectCallBack(moduleContext, true);
+			disconnectCallBack(moduleContext, true, address);
 		} else {
-			disconnectCallBack(moduleContext, false);
+			disconnectCallBack(moduleContext, false, address);
 		}
 	}
 
@@ -168,6 +191,7 @@ public class SamsungBle implements IBle {
 	@Override
 	public void setNotify(UZModuleContext moduleContext, String address,
 			String serviceUUID, String characteristicUUID) {
+		mNotifyCallBackMap.put(characteristicUUID, moduleContext);
 		BluetoothDevice device = mBluetoothAdapter.getRemoteDevice(address);
 		if (device == null) {
 			errcodeCallBack(moduleContext, 6);
@@ -302,25 +326,48 @@ public class SamsungBle implements IBle {
 		@Override
 		public void onCharacteristicChanged(
 				BluetoothGattCharacteristic characteristic) {
-			onCharacteristic(mNotifyCallBackMap, characteristic);
+			if (mSimpleNotifyCallBackMap.containsKey(characteristic.getUuid()
+					.toString())) {
+				onSimpleCharacteristic(mSimpleNotifyCallBackMap,
+						characteristic, true);
+			} else {
+				onCharacteristic(mNotifyCallBackMap, characteristic, false);
+			}
 		}
 
 		@Override
 		public void onCharacteristicRead(
 				BluetoothGattCharacteristic characteristic, int arg1) {
-			onCharacteristic(mReadCharacteristicCallBackMap, characteristic);
+			onCharacteristic(mReadCharacteristicCallBackMap, characteristic,
+					false);
 		}
 
 		@Override
 		public void onCharacteristicWrite(
 				BluetoothGattCharacteristic characteristic, int arg1) {
-			onCharacteristic(mWriteCharacteristicCallBackMap, characteristic);
+			onCharacteristic(mWriteCharacteristicCallBackMap, characteristic,
+					false);
 		}
 
 		@Override
 		public void onConnectionStateChange(BluetoothDevice device, int status,
 				int newState) {
 			String address = device.getAddress();
+			if (mConnectsCallBackMap.containsKey(address)) {
+				if (status != BluetoothGatt.GATT_SUCCESS) {
+					connectsCallBack(mConnectsCallBackMap.get(address), false,
+							-1, address);
+					return;
+				}
+				if (newState == BluetoothProfile.STATE_CONNECTED) {
+					connectsCallBack(mConnectsCallBackMap.get(address), true,
+							0, address);
+				} else {
+					connectsCallBack(mConnectsCallBackMap.get(address), false,
+							-1, address);
+				}
+				return;
+			}
 			UZModuleContext moduleContext = mConnectCallBackMap.get(address);
 			if (status != BluetoothGatt.GATT_SUCCESS) {
 				connectCallBack(moduleContext, false, -1);
@@ -384,11 +431,30 @@ public class SamsungBle implements IBle {
 		}
 	}
 
+	private void connectsCallBack(UZModuleContext moduleContext,
+			boolean status, int errCode, String uuid) {
+		JSONObject ret = new JSONObject();
+		JSONObject err = new JSONObject();
+		try {
+			ret.put("status", status);
+			if (status) {
+				ret.put("peripheralUUID", uuid);
+				moduleContext.success(ret, false);
+			} else {
+				err.put("code", errCode);
+				moduleContext.error(ret, err, false);
+			}
+		} catch (JSONException e) {
+			e.printStackTrace();
+		}
+	}
+
 	private void disconnectCallBack(UZModuleContext moduleContext,
-			boolean status) {
+			boolean status, String uuid) {
 		JSONObject ret = new JSONObject();
 		try {
 			ret.put("status", status);
+			ret.put("peripheralUUID", uuid);
 			moduleContext.success(ret, false);
 		} catch (JSONException e) {
 			e.printStackTrace();
@@ -523,13 +589,22 @@ public class SamsungBle implements IBle {
 			e.printStackTrace();
 		}
 	}
+	
+	private void onSimpleCharacteristic(Map<String, Ble> map,
+			BluetoothGattCharacteristic characteristic, boolean isSimple) {
+		UZModuleContext moduleContext = map.get(
+				characteristic.getUuid().toString()).getModuleContext();
+		characteristicSimpleCallBack(moduleContext, characteristic);
+	}
 
 	private void onCharacteristic(Map<String, UZModuleContext> map,
-			BluetoothGattCharacteristic characteristic) {
+			BluetoothGattCharacteristic characteristic, boolean isSimple) {
 		UZModuleContext moduleContext = map.get(characteristic.getUuid()
 				.toString());
 		if (moduleContext != null)
 			characteristicCallBack(moduleContext, characteristic);
+		else
+			characteristicSimpleCallBack(moduleContext, characteristic);
 	}
 
 	private void characteristicCallBack(UZModuleContext moduleContext,
@@ -551,6 +626,45 @@ public class SamsungBle implements IBle {
 			moduleContext.success(ret, false);
 		} catch (JSONException e) {
 			e.printStackTrace();
+		}
+	}
+
+	private void characteristicSimpleCallBack(UZModuleContext moduleContext,
+			BluetoothGattCharacteristic characteristic) {
+		JSONObject ret = new JSONObject();
+		try {
+			ret.put("status", true);
+			setNotifyData(characteristic);
+			moduleContext.success(ret, false);
+		} catch (JSONException e) {
+			e.printStackTrace();
+		}
+	}
+
+	private void setNotifyData(BluetoothGattCharacteristic characteristic) {
+		Ble ble = mSimpleNotifyCallBackMap.get(characteristic.getUuid()
+				.toString());
+		if (ble != null) {
+			if (mNotifyData.isNull(ble.getPeripheralUUID())) {
+				JSONObject notifyData = new JSONObject();
+				try {
+					notifyData.put("serviceUUID", ble.getServiceId());
+					notifyData
+							.put("characterUUID", ble.getCharacteristicUUID());
+					JSONArray data = new JSONArray();
+					data.put(new String(
+							Hex.encodeHex(characteristic.getValue())));
+					notifyData.put("data", data);
+					mNotifyData.put(ble.getPeripheralUUID(), notifyData);
+				} catch (JSONException e) {
+					e.printStackTrace();
+				}
+			} else {
+				JSONObject notifyData = mNotifyData.optJSONObject(ble
+						.getPeripheralUUID());
+				JSONArray data = notifyData.optJSONArray("data");
+				data.put(new String(Hex.encodeHex(characteristic.getValue())));
+			}
 		}
 	}
 
@@ -707,5 +821,49 @@ public class SamsungBle implements IBle {
 		}
 		errcodeCallBack(moduleContext, 8);
 		return null;
+	}
+
+	@Override
+	public void setSimpleNotify(UZModuleContext moduleContext, String address,
+			String serviceUUID, String characteristicUUID) {
+		mSimpleNotifyCallBackMap.put(characteristicUUID, new Ble(address,
+				serviceUUID, characteristicUUID, moduleContext));
+		BluetoothDevice device = mBluetoothAdapter.getRemoteDevice(address);
+		if (device == null) {
+			errcodeCallBack(moduleContext, 6);
+			return;
+		}
+		BluetoothGattService service = mBluetoothGatt.getService(device,
+				UUID.fromString(serviceUUID));
+		if (service == null) {
+			errcodeCallBack(moduleContext, 5);
+			return;
+		}
+		BluetoothGattCharacteristic characteristic = service
+				.getCharacteristic(UUID.fromString(characteristicUUID));
+		if (characteristic == null) {
+			errcodeCallBack(moduleContext, 4);
+			return;
+		}
+		if (!mBluetoothGatt.setCharacteristicNotification(characteristic, true)) {
+			errcodeCallBack(moduleContext, -1);
+			return;
+		}
+		BluetoothGattDescriptor descriptor = characteristic
+				.getDescriptor(DESC_CCC);
+		if (descriptor == null) {
+			return;
+		}
+		mBluetoothGatt.readDescriptor(descriptor);
+	}
+
+	@Override
+	public void getAllSimpleNotifyData(UZModuleContext moduleContext) {
+		moduleContext.success(mNotifyData, false);
+	}
+
+	@Override
+	public void clearAllSimpleNotifyData() {
+		mNotifyData = new JSONObject();
 	}
 }

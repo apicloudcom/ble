@@ -1,5 +1,6 @@
 package com.apicloud.uzble;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -30,8 +31,10 @@ public class AndroidBle implements IBle {
 	private BluetoothAdapter mBluetoothAdapter;
 	private Map<String, BluetoothGatt> mBluetoothGattMap;
 	private Map<String, UZModuleContext> mConnectCallBackMap;
+	private Map<String, UZModuleContext> mConnectsCallBackMap;
 	private Map<String, UZModuleContext> mDiscoverServiceCallBackMap;
 	private Map<String, UZModuleContext> mNotifyCallBackMap;
+	private List<Ble> mSimpleNotifyCallBackMap;
 	private Map<String, UZModuleContext> mReadCharacteristicCallBackMap;
 	private Map<String, UZModuleContext> mWriteCharacteristicCallBackMap;
 	private Map<String, UZModuleContext> mReadDescriptorCallBackMap;
@@ -39,6 +42,7 @@ public class AndroidBle implements IBle {
 	private Map<String, BleDeviceInfo> mScanBluetoothDeviceMap;
 	private Map<String, List<BluetoothGattService>> mServiceMap;
 	private boolean mIsScanning;
+	private JSONObject mNotifyData;
 
 	public AndroidBle(Context context) {
 		mContext = context;
@@ -53,6 +57,9 @@ public class AndroidBle implements IBle {
 		mReadDescriptorCallBackMap = new HashMap<String, UZModuleContext>();
 		mWriteCharacteristicCallBackMap = new HashMap<String, UZModuleContext>();
 		mWriteDescriptorCallBackMap = new HashMap<String, UZModuleContext>();
+		mSimpleNotifyCallBackMap = new ArrayList<Ble>();
+		mConnectsCallBackMap = new HashMap<String, UZModuleContext>();
+		mNotifyData = new JSONObject();
 	}
 
 	@Override
@@ -77,6 +84,7 @@ public class AndroidBle implements IBle {
 
 	@Override
 	public void stopScan() {
+		mScanBluetoothDeviceMap.clear();
 		mBluetoothAdapter.stopLeScan(mLeScanCallback);
 		mIsScanning = false;
 	}
@@ -97,19 +105,38 @@ public class AndroidBle implements IBle {
 	}
 
 	@Override
+	public void connectPeripherals(UZModuleContext moduleContext,
+			JSONArray address) {
+		for (int i = 0; i < address.length(); i++) {
+			mConnectsCallBackMap.put(address.optString(i), moduleContext);
+			if (address == null || address.length() == 0) {
+				connectCallBack(moduleContext, false, 1);
+				return;
+			}
+			try {
+				BluetoothDevice device = mBluetoothAdapter
+						.getRemoteDevice(address.optString(i));
+				device.connectGatt(mContext, false, mBluetoothGattCallback);
+			} catch (Exception e) {
+				connectsCallBack(moduleContext, false, 2, address.optString(i));
+			}
+		}
+	}
+
+	@Override
 	public void disconnect(UZModuleContext moduleContext, String address) {
 		BluetoothGatt bluetoothGatt = mBluetoothGattMap.get(address);
 		if (bluetoothGatt != null) {
 			bluetoothGatt.disconnect();
-			disconnectCallBack(moduleContext, true);
+			disconnectCallBack(moduleContext, true, address);
 		} else {
-			disconnectCallBack(moduleContext, false);
+			disconnectCallBack(moduleContext, false, address);
 		}
 	}
 
 	@Override
 	public boolean isConnected(String address) {
-		return mConnectCallBackMap.containsKey(address);
+		return mConnectCallBackMap.containsKey(address)||mConnectsCallBackMap.containsKey(address);
 	}
 
 	@Override
@@ -434,8 +461,28 @@ public class AndroidBle implements IBle {
 		public void onConnectionStateChange(BluetoothGatt gatt, int status,
 				int newState) {
 			String address = gatt.getDevice().getAddress();
+			if (mConnectsCallBackMap.containsKey(address)) {
+				if (status != BluetoothGatt.GATT_SUCCESS) {
+					connectsCallBack(mConnectsCallBackMap.get(address), false,
+							-1, address);
+					mConnectsCallBackMap.remove(address);
+					return;
+				}
+				if (newState == BluetoothProfile.STATE_CONNECTED) {
+					mBluetoothGattMap.put(address, gatt);
+					connectsCallBack(mConnectsCallBackMap.get(address), true,
+							0, address);
+				} else {
+					mBluetoothGattMap.remove(address);
+					connectsCallBack(mConnectsCallBackMap.get(address), false,
+							-1, address);
+					mConnectsCallBackMap.remove(address);
+				}
+				return;
+			}
 			UZModuleContext moduleContext = mConnectCallBackMap.get(address);
 			if (status != BluetoothGatt.GATT_SUCCESS) {
+				mConnectCallBackMap.remove(address);
 				connectCallBack(moduleContext, false, -1);
 				return;
 			}
@@ -464,19 +511,26 @@ public class AndroidBle implements IBle {
 		@Override
 		public void onCharacteristicRead(BluetoothGatt gatt,
 				BluetoothGattCharacteristic characteristic, int status) {
-			onCharacteristic(mReadCharacteristicCallBackMap, characteristic);
+			onCharacteristic(mReadCharacteristicCallBackMap, characteristic,
+					false);
 		}
 
 		@Override
 		public void onCharacteristicWrite(BluetoothGatt gatt,
 				BluetoothGattCharacteristic characteristic, int status) {
-			onCharacteristic(mWriteCharacteristicCallBackMap, characteristic);
+			onCharacteristic(mWriteCharacteristicCallBackMap, characteristic,
+					false);
 		}
 
 		@Override
 		public void onCharacteristicChanged(BluetoothGatt gatt,
 				BluetoothGattCharacteristic characteristic) {
-			onCharacteristic(mNotifyCallBackMap, characteristic);
+			if (getBle(gatt, characteristic) != null) {
+				characteristicSimpleCallBack(getBle(gatt, characteristic),
+						characteristic);
+			} else {
+				onCharacteristic(mNotifyCallBackMap, characteristic, false);
+			}
 		}
 
 		@Override
@@ -492,8 +546,20 @@ public class AndroidBle implements IBle {
 		}
 	};
 
-	private void onCharacteristic(Map<String, UZModuleContext> map,
+	private Ble getBle(BluetoothGatt gatt,
 			BluetoothGattCharacteristic characteristic) {
+		for (Ble ble : mSimpleNotifyCallBackMap) {
+			if (ble.getPeripheralUUID().equals(gatt.getDevice().getAddress())
+					&& ble.getServiceId().equals(
+							characteristic.getService().getUuid().toString())) {
+				return ble;
+			}
+		}
+		return null;
+	}
+
+	private void onCharacteristic(Map<String, UZModuleContext> map,
+			BluetoothGattCharacteristic characteristic, boolean isSimple) {
 		UZModuleContext moduleContext = map.get(characteristic.getUuid()
 				.toString());
 		if (moduleContext != null)
@@ -527,6 +593,37 @@ public class AndroidBle implements IBle {
 		}
 	}
 
+	private void connectsCallBack(UZModuleContext moduleContext,
+			boolean status, int errCode, String uuid) {
+		JSONObject ret = new JSONObject();
+		JSONObject err = new JSONObject();
+		try {
+			ret.put("status", status);
+			if (status) {
+				ret.put("peripheralUUID", uuid);
+				moduleContext.success(ret, false);
+			} else {
+				err.put("code", errCode);
+				moduleContext.error(ret, err, false);
+			}
+		} catch (JSONException e) {
+			e.printStackTrace();
+		}
+	}
+
+	public void connectsCallBack(UZModuleContext moduleContext,
+			BluetoothDevice device, boolean status,
+			JSONArray mConnectedDeviceMap) {
+		JSONObject ret = new JSONObject();
+		try {
+			ret.put("status", status);
+			ret.put("peripheralUUID", device.getAddress());
+			moduleContext.success(ret, false);
+		} catch (JSONException e) {
+			e.printStackTrace();
+		}
+	}
+
 	private void discoverServiceCallBack(UZModuleContext moduleContext,
 			List<BluetoothGattService> services, boolean status, int errCode) {
 		JSONObject ret = new JSONObject();
@@ -550,10 +647,11 @@ public class AndroidBle implements IBle {
 	}
 
 	private void disconnectCallBack(UZModuleContext moduleContext,
-			boolean status) {
+			boolean status, String uuid) {
 		JSONObject ret = new JSONObject();
 		try {
 			ret.put("status", status);
+			ret.put("peripheralUUID", uuid);
 			moduleContext.success(ret, false);
 		} catch (JSONException e) {
 			e.printStackTrace();
@@ -603,6 +701,44 @@ public class AndroidBle implements IBle {
 			moduleContext.success(ret, false);
 		} catch (JSONException e) {
 			e.printStackTrace();
+		}
+	}
+
+	private void characteristicSimpleCallBack(Ble ble,
+			BluetoothGattCharacteristic characteristic) {
+		JSONObject ret = new JSONObject();
+		try {
+			ret.put("status", true);
+			setNotifyData(characteristic, ble);
+			ble.getModuleContext().success(ret, false);
+		} catch (JSONException e) {
+			e.printStackTrace();
+		}
+	}
+
+	private void setNotifyData(BluetoothGattCharacteristic characteristic,
+			Ble ble) {
+		if (ble != null) {
+			if (mNotifyData.isNull(ble.getPeripheralUUID())) {
+				JSONObject notifyData = new JSONObject();
+				try {
+					notifyData.put("serviceUUID", ble.getServiceId());
+					notifyData
+							.put("characterUUID", ble.getCharacteristicUUID());
+					JSONArray data = new JSONArray();
+					data.put(new String(
+							Hex.encodeHex(characteristic.getValue())));
+					notifyData.put("data", data);
+					mNotifyData.put(ble.getPeripheralUUID(), notifyData);
+				} catch (JSONException e) {
+					e.printStackTrace();
+				}
+			} else {
+				JSONObject notifyData = mNotifyData.optJSONObject(ble
+						.getPeripheralUUID());
+				JSONArray data = notifyData.optJSONArray("data");
+				data.put(new String(Hex.encodeHex(characteristic.getValue())));
+			}
 		}
 	}
 
@@ -692,5 +828,47 @@ public class AndroidBle implements IBle {
 		} catch (JSONException e) {
 			e.printStackTrace();
 		}
+	}
+
+	@Override
+	public void setSimpleNotify(UZModuleContext moduleContext, String address,
+			String serviceUUID, String characteristicUUID) {
+		mSimpleNotifyCallBackMap.add(new Ble(address, serviceUUID,
+				characteristicUUID, moduleContext));
+		BluetoothGatt bluetoothGatt = mBluetoothGattMap.get(address);
+		if (bluetoothGatt != null) {
+			BluetoothGattCharacteristic characteristic = characteristic(
+					moduleContext, address, serviceUUID, characteristicUUID);
+			if (characteristic != null) {
+				boolean status = bluetoothGatt.setCharacteristicNotification(
+						characteristic, true);
+				if (status) {
+					BluetoothGattDescriptor descriptor = characteristic
+							.getDescriptor(DESC_CCC);
+					if (descriptor == null) {
+						errcodeCallBack(moduleContext, -1);
+					} else {
+						if (!descriptor
+								.setValue(BluetoothGattDescriptor.ENABLE_NOTIFICATION_VALUE)) {
+							errcodeCallBack(moduleContext, -1);
+						} else {
+							bluetoothGatt.writeDescriptor(descriptor);
+						}
+					}
+				} else {
+					errcodeCallBack(moduleContext, -1);
+				}
+			}
+		}
+	}
+
+	@Override
+	public void getAllSimpleNotifyData(UZModuleContext moduleContext) {
+		moduleContext.success(mNotifyData, false);
+	}
+
+	@Override
+	public void clearAllSimpleNotifyData() {
+		mNotifyData = new JSONObject();
 	}
 }
