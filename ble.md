@@ -1048,6 +1048,16 @@ value
 - 类型：字符串
 - 描述：要写入的数据 ，十六进制的字符串
 
+writeType
+
+- 类型：字符串
+- 描述：（可选项）写入数据时的类型，本参数只在 iOS 平台上有效，android 平台忽略本参数
+- 默认：auto
+- 取值范围：
+	- auto：模块自动选择类型
+	- response：有回调
+	- withoutResponse：无回调
+
 ##callback(ret,err)
 
 ret:
