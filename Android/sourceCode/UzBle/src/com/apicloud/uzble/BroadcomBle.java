@@ -221,18 +221,41 @@ public class BroadcomBle implements IBle {
 		mBluetoothGatt.readDescriptor(descriptor);
 	}
 
+	private String mAdress;
+	private String mServiceUUID;
+	private String mCharacteristicUUID;
+	private BluetoothGattCharacteristic mCharacteristic;
+
 	@Override
 	public void readValueForCharacteristic(UZModuleContext moduleContext,
 			String address, String serviceUUID, String characteristicUUID) {
-		mReadCharacteristicCallBackMap.put(characteristicUUID, moduleContext);
-		if (mBluetoothGatt != null) {
-			BluetoothGattCharacteristic characteristic = characteristic(
-					moduleContext, address, serviceUUID, characteristicUUID);
-			if (characteristic != null) {
+		mReadCharacteristicCallBackMap.put(characteristicUUID,
+				moduleContext);
+		if (mAdress != null && mServiceUUID != null
+				&& mCharacteristicUUID != null && mAdress.equals(address)
+				&& mServiceUUID.equals(serviceUUID)
+				&& mCharacteristicUUID.equals(characteristicUUID)) {
+			if (mCharacteristic != null && mBluetoothGatt != null) {
 				boolean status = mBluetoothGatt
-						.readCharacteristic(characteristic);
+						.readCharacteristic(mCharacteristic);
 				if (!status) {
 					errcodeCallBack(moduleContext, -1);
+				}
+			}
+		} else {
+			mAdress = address;
+			mServiceUUID = serviceUUID;
+			mCharacteristicUUID = characteristicUUID;
+			if (mBluetoothGatt != null) {
+				BluetoothGattCharacteristic characteristic = characteristic(
+						moduleContext, address, serviceUUID, characteristicUUID);
+				mCharacteristic = characteristic;
+				if (characteristic != null) {
+					boolean status = mBluetoothGatt
+							.readCharacteristic(characteristic);
+					if (!status) {
+						errcodeCallBack(moduleContext, -1);
+					}
 				}
 			}
 		}

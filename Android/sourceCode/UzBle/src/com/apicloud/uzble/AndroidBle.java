@@ -136,7 +136,8 @@ public class AndroidBle implements IBle {
 
 	@Override
 	public boolean isConnected(String address) {
-		return mConnectCallBackMap.containsKey(address)||mConnectsCallBackMap.containsKey(address);
+		return mConnectCallBackMap.containsKey(address)
+				|| mConnectsCallBackMap.containsKey(address);
 	}
 
 	@Override
@@ -220,19 +221,43 @@ public class AndroidBle implements IBle {
 		}
 	}
 
+	private String mAdress;
+	private String mServiceUUID;
+	private String mCharacteristicUUID;
+	private BluetoothGatt mBluetoothGatt;
+	private BluetoothGattCharacteristic mCharacteristic;
+
 	@Override
 	public void readValueForCharacteristic(UZModuleContext moduleContext,
 			String address, String serviceUUID, String characteristicUUID) {
 		mReadCharacteristicCallBackMap.put(characteristicUUID, moduleContext);
-		BluetoothGatt bluetoothGatt = mBluetoothGattMap.get(address);
-		if (bluetoothGatt != null) {
-			BluetoothGattCharacteristic characteristic = characteristic(
-					moduleContext, address, serviceUUID, characteristicUUID);
-			if (characteristic != null) {
-				boolean status = bluetoothGatt
-						.readCharacteristic(characteristic);
+		if (mAdress != null && mServiceUUID != null
+				&& mCharacteristicUUID != null && mAdress.equals(address)
+				&& mServiceUUID.equals(serviceUUID)
+				&& mCharacteristicUUID.equals(characteristicUUID)) {
+			if (mCharacteristic != null && mBluetoothGatt != null) {
+				boolean status = mBluetoothGatt
+						.readCharacteristic(mCharacteristic);
 				if (!status) {
 					errcodeCallBack(moduleContext, -1);
+				}
+			}
+		} else {
+			mAdress = address;
+			mServiceUUID = serviceUUID;
+			mCharacteristicUUID = characteristicUUID;
+			BluetoothGatt bluetoothGatt = mBluetoothGattMap.get(address);
+			mBluetoothGatt = bluetoothGatt;
+			if (bluetoothGatt != null) {
+				BluetoothGattCharacteristic characteristic = characteristic(
+						moduleContext, address, serviceUUID, characteristicUUID);
+				mCharacteristic = characteristic;
+				if (characteristic != null) {
+					boolean status = bluetoothGatt
+							.readCharacteristic(characteristic);
+					if (!status) {
+						errcodeCallBack(moduleContext, -1);
+					}
 				}
 			}
 		}
