@@ -39,6 +39,10 @@
 		});
     }
     
+    function connectTest(){
+    	
+    }
+    
     function connects(){
     	var ble = api.require('ble');
     	addrs = ['A0:E6:F8:4E:B0:EC', 'A0:E6:F8:4C:E9:0C', 'A0:E6:F8:4C:C6:C8'];
@@ -117,20 +121,20 @@
     function connect(){
 	     var ble = api.require('ble');
 		ble.connect({
-			peripheralUUID:'A0:E6:F8:4E:B0:EC'	
+			peripheralUUID:'A0:E6:F8:50:D0:37'	
 		},function( ret,err ){
-		   if(ret.status){
-		   		discoverService();
-		   }
+		   //if(ret.status){
+		   //		discoverService();
+		   //}
 		   api.alert( {msg:JSON.stringify( ret )});
-		   api.alert( {msg:JSON.stringify( err )});
+		  // api.alert( {msg:JSON.stringify( err )});
 		});
     }
     
     function disconnect(){
 	     var ble = api.require('ble');
 		ble.disconnect({
-			peripheralUUID:'A0:E6:F8:4E:B0:EC'	
+			peripheralUUID:'A0:E6:F8:50:D0:37'	
 		},function( ret){
 		   api.alert( {msg:JSON.stringify( ret )});
 		});

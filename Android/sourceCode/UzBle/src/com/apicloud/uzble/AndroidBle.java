@@ -5,10 +5,12 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+
 import org.apache.commons.codec.binary.Hex;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
+
 import android.annotation.SuppressLint;
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothAdapter.LeScanCallback;
@@ -20,6 +22,7 @@ import android.bluetooth.BluetoothGattDescriptor;
 import android.bluetooth.BluetoothGattService;
 import android.bluetooth.BluetoothProfile;
 import android.content.Context;
+
 import com.uzmap.pkg.uzcore.uzmodule.UZModuleContext;
 
 @SuppressLint("NewApi")
@@ -285,12 +288,13 @@ public class AndroidBle implements IBle {
 	@Override
 	public void writeValueForCharacteristic(UZModuleContext moduleContext,
 			String address, String serviceUUID, String characteristicUUID,
-			String value) {
+			String value, int writeType) {
 		mWriteCharacteristicCallBackMap.put(characteristicUUID, moduleContext);
 		BluetoothGatt bluetoothGatt = mBluetoothGattMap.get(address);
 		if (bluetoothGatt != null) {
 			BluetoothGattCharacteristic characteristic = characteristicWrite(
-					moduleContext, address, serviceUUID, characteristicUUID);
+					moduleContext, address, serviceUUID, characteristicUUID,
+					writeType);
 			if (characteristic != null) {
 				characteristic.setValue(value(value));
 				boolean status = bluetoothGatt
@@ -381,7 +385,7 @@ public class AndroidBle implements IBle {
 
 	private BluetoothGattCharacteristic characteristicWrite(
 			UZModuleContext moduleContext, String address, String serviceUUID,
-			String characteristicUUID) {
+			String characteristicUUID, int writeType) {
 		List<BluetoothGattService> services = mServiceMap.get(address);
 		if (services != null) {
 			for (BluetoothGattService service : services) {
@@ -392,6 +396,7 @@ public class AndroidBle implements IBle {
 						for (BluetoothGattCharacteristic characteristic : characteristics) {
 							if (characteristic.getUuid().toString()
 									.equals(characteristicUUID)) {
+								characteristic.setWriteType(writeType);
 								return characteristic;
 							}
 						}

@@ -7,6 +7,8 @@ import org.json.JSONException;
 import org.json.JSONObject;
 import android.annotation.SuppressLint;
 import android.bluetooth.BluetoothAdapter;
+import android.bluetooth.BluetoothGattCharacteristic;
+
 import com.apicloud.uzble.BleUtil.BLESDK;
 import com.uzmap.pkg.uzcore.UZWebView;
 import com.uzmap.pkg.uzcore.uzmodule.UZModule;
@@ -290,6 +292,7 @@ public class UzBle extends UZModule {
 			String characteristicUUID = moduleContext
 					.optString("characteristicUUID");
 			String value = moduleContext.optString("value");
+			String writeType = moduleContext.optString("writeType", "auto");
 			if (address == null || address.length() == 0) {
 				errcodeCallBack(moduleContext, 1);
 				return;
@@ -306,8 +309,14 @@ public class UzBle extends UZModule {
 				errcodeCallBack(moduleContext, 4);
 				return;
 			}
+			int intWriteType = BluetoothGattCharacteristic.WRITE_TYPE_DEFAULT;
+			if (writeType.equals("response")) {
+				intWriteType = BluetoothGattCharacteristic.WRITE_TYPE_SIGNED;
+			} else if (writeType.equals("withoutResponse")) {
+				intWriteType = BluetoothGattCharacteristic.WRITE_TYPE_NO_RESPONSE;
+			}
 			mIBle.writeValueForCharacteristic(moduleContext, address,
-					serviceUUID, characteristicUUID, value);
+					serviceUUID, characteristicUUID, value, intWriteType);
 		} else {
 			errcodeCallBack(moduleContext, 7);
 		}

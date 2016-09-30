@@ -53,7 +53,7 @@ public interface IBle {
 
 	public void writeValueForCharacteristic(UZModuleContext moduleContext,
 			String address, String serviceUUID, String characteristicUUID,
-			String value);
+			String value,int writeType);
 
 	public void writeValueForDescriptor(UZModuleContext moduleContext,
 			String address, String serviceUUID, String characteristicUUID,
