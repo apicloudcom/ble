@@ -39,8 +39,31 @@
 		});
     }
     
-    function connectTest(){
-    	
+    function connectTest1(){
+    	var ble = api.require('ble');
+		ble.connect({
+			peripheralUUID:'A0:E6:F8:50:D0:37'	
+		},function( ret,err ){
+		   alert(JSON.stringify(ret));
+		});
+    }
+    
+    function connectTest2(){
+    	var ble = api.require('ble');
+		ble.connect({
+			peripheralUUID:'A0:E6:F8:4E:A8:3E'	
+		},function( ret,err ){
+		   alert(JSON.stringify(ret));
+		});
+    }
+    
+    function connectTest3(){
+    	var ble = api.require('ble');
+		ble.connect({
+			peripheralUUID:'A0:E6:F8:4E:AD:D2'	
+		},function( ret,err ){
+		   alert(JSON.stringify(ret));
+		});
     }
     
     function connects(){
@@ -222,7 +245,7 @@
     
     
      function connectB(){
-	     var ble = api.require('ble');
+	     var ble = api.require('ble'); 
 		ble.connect({
 			peripheralUUID:'CF:23:98:C1:53:BC'	
 		},function( ret,err ){
@@ -249,6 +272,14 @@
     <div id="wrap">
         <div id="main">
         	<br>
+        	<div class='itemtitle'>1.connectTest1</div>
+			<div class="clickbtn" tapmode="active" onclick="connectTest1()" >connectTest1</div>
+			<div class='itemtitle'>1.connectTest2</div>
+			<div class="clickbtn" tapmode="active" onclick="connectTest2()" >connectTest2</div>
+			<div class='itemtitle'>1.connectTest3</div>
+			<div class="clickbtn" tapmode="active" onclick="connectTest3()" >connectTest3</div>
+        	
+        	
 			<div class='itemtitle'>1.初始化蓝牙设备</div>
 			<div class="clickbtn" tapmode="active" onclick="initBle()" >初始化</div> 
 			<div class='itemtitle'>2.scan蓝牙设备</div>

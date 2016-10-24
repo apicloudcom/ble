@@ -219,6 +219,14 @@ public class UzBle extends UZModule {
 	public void jsmethod_getAllSimpleNotifyData(UZModuleContext moduleContext) {
 		if (mIBle != null) {
 			mIBle.getAllSimpleNotifyData(moduleContext);
+		} else {
+			JSONObject ret = new JSONObject();
+			try {
+				ret.put("status", false);
+				moduleContext.success(ret,true);
+			} catch (JSONException e) {
+				e.printStackTrace();
+			}
 		}
 	}
 
@@ -363,7 +371,9 @@ public class UzBle extends UZModule {
 			if (sdk == BLESDK.ANDROID) {
 				mIBle = new AndroidBle(mContext);
 			} else if (sdk == BLESDK.SAMSUNG) {
+				mIBle = new SamsungBle(mContext);
 			} else if (sdk == BLESDK.BROADCOM) {
+				mIBle = new BroadcomBle(mContext);
 			} else {
 				return;
 			}

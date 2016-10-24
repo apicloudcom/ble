@@ -122,9 +122,18 @@ public class SamsungBle implements IBle {
 		BluetoothDevice device = mBluetoothAdapter.getRemoteDevice(address);
 		if (device != null) {
 			mBluetoothGatt.cancelConnection(device);
+			remove2NotifyMap(address);
 			disconnectCallBack(moduleContext, true, address);
 		} else {
 			disconnectCallBack(moduleContext, false, address);
+		}
+	}
+	
+	private void remove2NotifyMap(String address) {
+		if (mSimpleNotifyCallBackMap == null)
+			return;
+		if (mSimpleNotifyCallBackMap.containsKey(address)) {
+			mSimpleNotifyCallBackMap.remove(address);
 		}
 	}
 

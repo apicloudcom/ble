@@ -130,10 +130,22 @@ public class AndroidBle implements IBle {
 	public void disconnect(UZModuleContext moduleContext, String address) {
 		BluetoothGatt bluetoothGatt = mBluetoothGattMap.get(address);
 		if (bluetoothGatt != null) {
+			bluetoothGatt.close();
 			bluetoothGatt.disconnect();
+			remove2NotifyMap(address);
 			disconnectCallBack(moduleContext, true, address);
 		} else {
 			disconnectCallBack(moduleContext, false, address);
+		}
+	}
+
+	private void remove2NotifyMap(String address) {
+		if (mSimpleNotifyCallBackMap == null)
+			return;
+		for (Ble ble : mSimpleNotifyCallBackMap) {
+			if (ble.getPeripheralUUID().equals(address)) {
+				mSimpleNotifyCallBackMap.remove(ble);
+			}
 		}
 	}
 
