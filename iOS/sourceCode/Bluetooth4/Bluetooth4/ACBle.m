@@ -608,7 +608,7 @@
 }
 #pragma mark - CBPeripheralDelegate -
 
-//按特征&描述符发送数据的回调
+#pragma mark 按特征&描述符发送数据的回调-----------发送数据的回调
 - (void)peripheral:(CBPeripheral *)peripheral didWriteValueForCharacteristic:(CBCharacteristic *)characteristic error:(NSError *)error {
     NSMutableDictionary *writeCharacteristic = [NSMutableDictionary dictionary];
     if(error){
@@ -621,7 +621,7 @@
     [self sendResultEventWithCallbackId:writeValueCbid dataDict:writeCharacteristic errDict:nil doDelete:NO];
 }
 
-//根据描述符读取数据
+#pragma mark 根据描述符读取数据---------------------接受数据的回调
 - (void)peripheral:(CBPeripheral *)peripheral didUpdateValueForDescriptor:(CBDescriptor *)descriptor error:(NSError *)error{
     NSMutableDictionary *descriptorDict = [NSMutableDictionary dictionary];
     NSString *descriptorUUID = descriptor.UUID.UUIDString;
@@ -641,7 +641,7 @@
     }
 }
 
-#pragma mark 按特征读取数据 & ，监听外围设备后不断的有心跳数据包的回调
+#pragma mark 监听外围设备后不断的有心跳数据包的回调-----监听数据的回调
 - (void)peripheral:(CBPeripheral *)peripheral didUpdateValueForCharacteristic:(CBCharacteristic *)characteristic error:(NSError *)error {
     /*
     NSData *characterData = characteristic.value;
@@ -650,6 +650,11 @@
         NSLog(@"didUpdateValueForCharacteristic:******%@",value);
     }
      */
+    if (peripheral && [peripheral isKindOfClass:[CBPeripheral class]]) {
+        if(peripheral.state  != CBPeripheralStateConnected) {
+            return;
+        }
+    }
     NSMutableDictionary *characteristicDict = [NSMutableDictionary dictionary];
     NSString *characterUUID = characteristic.UUID.UUIDString;
     if (!characterUUID) {
@@ -681,7 +686,7 @@
     }
 }
 
-#pragma mark 是否监听外围设备后成功的回调
+#pragma mark 是否监听外围设备后成功的回调---------------连接成功的回调
 - (void)peripheral:(CBPeripheral *)peripheral didUpdateNotificationStateForCharacteristic:(CBCharacteristic *)characteristic error:(nullable NSError *)error {
     //NSMutableDictionary *characteristicDict = [NSMutableDictionary dictionary];
     NSString *characterUUID = characteristic.UUID.UUIDString;
@@ -700,7 +705,7 @@
     }
 }
 
-//根据特征查找描述符
+#pragma mark 根据特征查找描述符-------------------------根据特征查找描述符的代理
 - (void)peripheral:(CBPeripheral *)peripheral didDiscoverDescriptorsForCharacteristic:(CBCharacteristic *)characteristic error:(NSError *)error {
     NSMutableDictionary *descriptorDict = [NSMutableDictionary dictionary];
     NSString *serviceUUID = characteristic.service.UUID.UUIDString;
@@ -728,7 +733,7 @@
     }
 }
 
-//查询指定服务的所有特征
+#pragma mark 查询指定服务的所有特征-----------------------查询服务的特征的代理
 - (void)peripheral:(CBPeripheral *)peripheral didDiscoverCharacteristicsForService:(CBService *)service error:(NSError *)error {
     NSMutableDictionary *characteristicDict = [NSMutableDictionary dictionary];
     NSString *serviceUUID = service.UUID.UUIDString;
@@ -756,7 +761,7 @@
     }
 }
 
-//查询指定设备的所有服务
+#pragma mark 查询指定设备的所有服务------------------------查询设备的所有服务的代理
 - (void)peripheral:(CBPeripheral *)peripheral didDiscoverServices:(NSError *)error {
     if(!peripheral.identifier) {
         return;
@@ -784,17 +789,17 @@
 
 #pragma mark - CBCentralManagerDelegate -
 
-//初始化中心设备管理器时返回其状态
+#pragma mark 初始化中心设备管理器时返回其状态---------------app进入后台时的回调
 - (void)centralManagerDidUpdateState:(CBCentralManager *)central {
     [self initManagerCallback:central.state];
 }
 
+#pragma mark app进入后台时的回调----------------------------app进入后台时的回调
 //app状态的保存或者恢复，这是第一个被调用的方法当APP进入后台去完成一些蓝牙有关的工作设置，使用这个方法同步app状态通过蓝牙系统
 - (void)centralManager:(CBCentralManager *)central willRestoreState:(NSDictionary<NSString *, id> *)dict {
 
 }
-
-//扫描设备的回调，大概每秒十次的频率在重复回调
+#pragma mark 扫描设备的回调，大概每秒十次的频率在重复回调---发型周围设备回调
 - (void)centralManager:(CBCentralManager *)central didDiscoverPeripheral:(CBPeripheral *)peripheral advertisementData:(NSDictionary<NSString *, id> *)advertisementData RSSI:(NSNumber *)RSSI {
     if (!peripheral.identifier) {
         return;
@@ -815,7 +820,7 @@
     }
 }
 
-#pragma mark 连接外围设备成功后的回调
+#pragma mark 连接外围设备成功后的回调------------------------连接成功的回调
 - (void)centralManager:(CBCentralManager *)central didConnectPeripheral:(CBPeripheral *)peripheral {
     if (connectCbid >= 0) {
         [self callbackCodeInfo:YES withCode:0 andCbid:connectCbid doDelete:NO andErrorInfo:nil];
@@ -831,7 +836,7 @@
     }
 }
 
-#pragma mark 连接外围设备失败后的回调
+#pragma mark 连接外围设备失败后的回调------------------------连接失败的回调
 - (void)centralManager:(CBCentralManager *)central didFailToConnectPeripheral:(CBPeripheral *)peripheral error:(nullable NSError *)error {
     if (connectCbid >= 0) {
         [self callbackCodeInfo:NO withCode:-1 andCbid:connectCbid doDelete:NO andErrorInfo:error];
@@ -847,8 +852,7 @@
         [self sendResultEventWithCallbackId:connectPeripheralsCbid dataDict:sendDict errDict:nil doDelete:NO];
     }
 }
-
-//断开通过uuid指定的外围设备的连接
+#pragma mark 断开通过uuid指定的外围设备的连接----------------断开连接的回调
 - (void)centralManager:(CBCentralManager *)central didDisconnectPeripheral:(CBPeripheral *)peripheral error:(nullable NSError *)error {
     if (disconnectClick) {
         disconnectClick = NO;
@@ -910,30 +914,30 @@
     return characteristicDict;
 }
 //初始化蓝牙管理器回调
-- (void)initManagerCallback:(CBCentralManagerState)managerState {
+- (void)initManagerCallback:(CBManagerState)managerState {
     NSString *state = nil;
     switch (managerState) {
-        case CBCentralManagerStatePoweredOff://设备关闭状态
+        case CBManagerStatePoweredOff://设备关闭状态
             state = @"poweredOff";
             break;
             
-        case CBCentralManagerStatePoweredOn:// 设备开启状态 -- 可用状态
+        case CBManagerStatePoweredOn:// 设备开启状态 -- 可用状态
             state = @"poweredOn";
             break;
             
-        case CBCentralManagerStateResetting://正在重置状态
+        case CBManagerStateResetting://正在重置状态
             state = @"resetting";
             break;
             
-        case CBCentralManagerStateUnauthorized:// 设备未授权状态
+        case CBManagerStateUnauthorized:// 设备未授权状态
             state = @"unauthorized";
             break;
             
-        case CBCentralManagerStateUnknown:// 初始的时候是未知的（刚刚创建的时候）
+        case CBManagerStateUnknown:// 初始的时候是未知的（刚刚创建的时候）
             state = @"unknown";
             break;
             
-        case CBCentralManagerStateUnsupported://设备不支持的状态
+        case CBManagerStateUnsupported://设备不支持的状态
             state = @"unsupported";
             break;
             
@@ -1316,6 +1320,7 @@
     
     return md;
 }
+
 - (NSString *)hexStringFromData:(NSData *)data {
     return [[[[NSString stringWithFormat:@"%@",data]
               stringByReplacingOccurrencesOfString: @"<" withString: @""]
