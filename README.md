@@ -25,6 +25,7 @@ APICloud 的 ble 模块是一个蓝牙模块。它封装了 iOS 和 android 两�
 [discoverCharacteristics](#12)
 [discoverDescriptorsForCharacteristic](#13)
 [setNotify](#14)
+[stopNotify](#141)
 [readValueForCharacteristic](#15)
 [readValueForDescriptor](#16)
 [writeValueForCharacteristic](#17)
@@ -833,6 +834,29 @@ ble.setNotify({
 iOS系统，Android系统
 
 可提供的1.0.0及更高版本
+
+
+<div id="141"></div>
+
+#**stopNotify**
+
+停止监听数据。调用setNotify接口后开始监听数据，不需要继续监听时调用disconnect断开链接，在iOS 平台上还需要调用此接口来停止监听。
+
+stopNotify()
+
+
+##示例代码
+
+```js
+var ble = api.require('ble');
+ble.stopNotify();
+```
+
+##可用性
+
+iOS系统
+
+可提供的1.0.4及更高版本
 
 #**readValueForCharacteristic**<div id="15"></div>
 

@@ -179,6 +179,36 @@
     }
 }
 
+
+- (void)getPeripheralState:(NSDictionary *)paramsDict_ {
+    NSString *peripheralUUID = [paramsDict_ stringValueForKey:@"peripheralUUID" defaultValue:nil];
+    if (peripheralUUID.length == 0) {
+        return;
+    }
+    NSInteger getPeripheralStateCbid = [paramsDict_ integerValueForKey:@"cbId" defaultValue:-1];
+    CBPeripheral *peripheral = [_allPeripheral objectForKey:peripheralUUID];
+    CBPeripheralState state = peripheral.state;
+    NSString *stateStr = @"unknow";
+    switch (state) {
+        case CBPeripheralStateDisconnected:
+            stateStr = @"disconnected";
+            break;
+        case CBPeripheralStateConnecting:
+            stateStr = @"connecting";
+            break;
+        case CBPeripheralStateConnected:
+            stateStr = @"connected";
+            break;
+        case CBPeripheralStateDisconnecting:
+            stateStr = @"disconnecting";
+            break;
+            
+        default:
+            break;
+    }
+    [self sendResultEventWithCallbackId:getPeripheralStateCbid dataDict:@{@"state":stateStr} errDict:nil doDelete:YES];
+}
+
 - (void)isConnected:(NSDictionary *)paramsDict_ {
     NSString *peripheralUUID = [paramsDict_ stringValueForKey:@"peripheralUUID" defaultValue:nil];
     if (peripheralUUID.length == 0) {
@@ -310,6 +340,10 @@
     } else {
         [self callbackCodeInfo:NO withCode:6 andCbid:discoverDescriptorsForCharacteristicCbid doDelete:YES andErrorInfo:nil];
     }
+}
+
+- (void)stopNotify:(NSDictionary *)paramsDict_ {
+    setNotifyCbid = -1;
 }
 
 - (void)setNotify:(NSDictionary *)paramsDict_ {
