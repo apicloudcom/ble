@@ -10,6 +10,7 @@
 #import <CoreBluetooth/CBService.h>
 #import <CoreBluetooth/CBCharacteristic.h>
 #import "NSDictionaryUtils.h"
+#import <objc/runtime.h>
 
 @interface ACBle ()
 <CBCentralManagerDelegate, CBPeripheralDelegate>
@@ -37,6 +38,7 @@
 @synthesize allPeripheralInfo = _allPeripheralInfo;
 @synthesize notifyPeripheralInfo = _notifyPeripheralInfo;
 
+static char bleExtendKey;
 #pragma mark - lifeCycle -
 
 - (void)dispose {
@@ -118,6 +120,35 @@
         [self sendResultEventWithCallbackId:getCurDvcCbid dataDict:[NSDictionary dictionaryWithObject:sendAry forKey:@"peripherals"] errDict:nil doDelete:YES];
     } else {
         [self sendResultEventWithCallbackId:getCurDvcCbid dataDict:nil errDict:nil doDelete:YES];
+    }
+}
+
+- (void)getPeripheralRssi:(NSDictionary *)paramsDict_ {
+    NSInteger getPeripheralRssiCbid = [paramsDict_ integerValueForKey:@"cbId" defaultValue:-1];
+    NSString *peripheralUUID = [paramsDict_ stringValueForKey:@"peripheralUUID" defaultValue:nil];
+    if (peripheralUUID.length == 0) {
+        [self callbackCodeInfo:NO withCode:1 andCbid:getPeripheralRssiCbid doDelete:YES andErrorInfo:nil];
+        return;
+    }
+    CBPeripheral *peripheral = [_allPeripheral objectForKey:peripheralUUID];
+    if (!peripheral) {
+        [self callbackCodeInfo:NO withCode:2 andCbid:getPeripheralRssiCbid doDelete:YES andErrorInfo:nil];
+        return;
+    }
+    NSNumber *cbid = [NSNumber numberWithInteger:getPeripheralRssiCbid];
+    objc_setAssociatedObject(peripheral, &bleExtendKey, cbid, OBJC_ASSOCIATION_RETAIN_NONATOMIC);
+    [peripheral readRSSI];
+}
+
+- (void)peripheral:(CBPeripheral *)peripheral didReadRSSI:(NSNumber *)RSSI error:(nullable NSError *)error NS_AVAILABLE(NA, 8_0) {
+    NSNumber *getPeripheralRssiCbid = (NSNumber *)objc_getAssociatedObject(peripheral, &bleExtendKey);
+    if (getPeripheralRssiCbid) {
+        NSInteger getPerCbid = [getPeripheralRssiCbid integerValue];
+        if (RSSI) {
+            [self sendResultEventWithCallbackId:getPerCbid dataDict:@{@"status":@(YES),@"rssi":RSSI} errDict:nil doDelete:YES];
+        } else {
+            [self sendResultEventWithCallbackId:getPerCbid dataDict:@{@"status":@(NO)} errDict:@{@"code":@(3)} doDelete:YES];
+        }
     }
 }
 
