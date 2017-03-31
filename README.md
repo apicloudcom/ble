@@ -4,42 +4,52 @@
 
 APICloud 的 ble 模块是一个蓝牙模块。它封装了 iOS 和 android 两个系统平台上的蓝牙4.0的相关功能接口，由于两个平台对蓝牙4.0开放接口的不一致性，所以本模块对原生提供的接口做了少许调整，以使两个平台做到统一规范，方便 APICloud 平台的开发者调用，达到一条代码即可生成适用于两个平台的目的。蓝牙4.0设备繁杂多样，每个蓝牙厂商可能提供的服务（service）、特征（Characteristics）、描述符（Descriptor）都不尽相同。每个蓝牙4.0厂商对自己的蓝牙设备读取数据格式也不尽相同。所以使用本模块时可能需要多次联调，而且收发数据的格式也要根据不同的蓝牙设备做相应的调整，为方便广大开发者迅速的开发蓝牙功能，APICloud 官方特将此模块源码开源。APICloud 的开发者可配合原生开发者联调测试蓝牙4.0的功能，加快开发进度。 
 
+## 模块接口文档
+
+<p style="color: #ccc; margin-bottom: 30px;">来自于：APICloud 官方</p>
 
 <ul id="tab" class="clearfix">
 	<li class="active"><a href="#method-content">Method</a></li>
 </ul>
-<div id="method-content">
 
 <div class="outline">
-[initManager](#1)
-[scan](#2)
-[getPeripheral](#3)
-[isScanning](#4)
-[stopScan](#5)
-[connect](#6)
-[disconnect](#7)
-[isConnected](#8)
-[retrievePeripheral](#9)
-[retrieveConnectedPeripheral](#10)
-[discoverService](#11)
-[discoverCharacteristics](#12)
-[discoverDescriptorsForCharacteristic](#13)
-[setNotify](#14)
-[stopNotify](#141)
-[readValueForCharacteristic](#15)
-[readValueForDescriptor](#16)
-[writeValueForCharacteristic](#17)
-[writeValueForDescriptor](#18)
+
+[initManager](#initManager)
+[scan](#scan)
+[getPeripheral](#getPeripheral)
+[getPeripheralRssi](#getPeripheralRssi)
+[isScanning](#isScanning)
+[stopScan](#stopScan)
+[connect](#connect)
+[disconnect](#disconnect)
+[isConnected](#isConnected)
+[retrievePeripheral](#retrievePeripheral)
+[retrieveConnectedPeripheral](#retrieveConnectedPeripheral)
+[discoverService](#discoverService)
+[discoverCharacteristics](#discoverCharacteristics)
+[discoverDescriptorsForCharacteristic](#discoverDescriptorsForCharacteristic)
+[setNotify](#setNotify)
+[stopNotify](#stopNotify)
+[readValueForCharacteristic](#readValueForCharacteristic)
+[readValueForDescriptor](#readValueForDescriptor)
+[writeValueForCharacteristic](#writeValueForCharacteristic)
+[writeValueForDescriptor](#writeValueForDescriptor)
+[connectPeripherals](#connectPeripherals)
+[setSimpleNotify](#setSimpleNotify)
+[getAllSimpleNotifyData](#getAllSimpleNotifyData)
+[clearAllSimpleNotifyData](#clearAllSimpleNotifyData)
+
 </div>
 
-#**概述**
+# **概述**
 
 **背景**
 
-***ios中蓝牙的适用场景***
+***蓝牙的适用场景***
 
 - 可用于第三方蓝牙设备交互，必须要支持蓝牙 4.0。
-- 硬件至少是 4s，系统至少是 IOS6。
+- iOS上：硬件至少是 iphone4s，系统至少是 iOS6。
+- android上：系统版本至少是 android4.3。
 
 蓝牙 4.0 以低功耗著称，一般也叫 BLE（BluetoothLowEnergy）。目前应用比较多的案例：运动手坏、嵌入式设备、智能家居
 
@@ -59,23 +69,25 @@ APICloud 的 ble 模块是一个蓝牙模块。它封装了 iOS 和 android 两�
 
 ***注意：***
 
-若要支持后台使用蓝牙功能需配置 config.xml 文件 [bluetooth-central、bluetooth-peripheral](http://docs.apicloud.com/APICloud/%E6%8A%80%E6%9C%AF%E4%B8%93%E9%A2%98/app-config-manual#14-2) 字段。
+若要支持后台使用蓝牙功能需配置 [config.xml](/APICloud/技术专题/app-config-manual) 文件 [bluetooth-central、bluetooth-peripheral](http://docs.apicloud.com/APICloud/%E6%8A%80%E6%9C%AF%E4%B8%93%E9%A2%98/app-config-manual#14-2) 字段。
 
 ***本模块源码已开源，地址为：https://github.com/apicloudcom/ble***
 
-**模块接口**
+# 模块接口
 
-#**initManager**<dive id="1"></div>
+<dive id="initManager"></div>
+
+# **initManager**
 
 初始化蓝牙4.0管理器
 
 initManager(cllback(ret))
 
-##callback(ret)
+## callback(ret)
 
 ret:
 
-- 类型：JSON对象
+- 类型：JSON 对象
 - 内部字段：
 
 ```js
@@ -89,41 +101,43 @@ ret:
                              //unsupported：设备不支持的状态
 }
 ```
-##示例代码
+## 示例代码
 
 ```js
 var ble = api.require('ble');
-ble.initManager(function(ret){
-  if(ret.state == "poweredOn"){
-    api.alert({msg:"初始化成功"});
-  }
+ble.initManager(function(ret) {
+    if (ret.state == "poweredOn") {
+        api.alert({ msg: "初始化成功" });
+    }
 });
 ```
 
-##可用性
+## 可用性
 
 iOS系统，Android系统
 
 可提供的1.0.0及更高版本
 
-#**scan**<div id="2"></div>
+<div id="scan"></div>
 
-开始搜索蓝牙4.0设备，模块内部会不断的扫描跟新附近的蓝牙4.0设备信息，可通过 getPeripheral 接口来获取扫描到的设备信息。若要停止、清空扫描则调用 stopScan 接口
+# **scan**
 
-scan({params}, callback(ret))
+开始搜索蓝牙4.0设备，模块内部会不断的扫描更新附近的蓝牙4.0设备信息，可通过 getPeripheral 接口来获取扫描到的设备信息。若要停止、清空扫描则调用 stopScan 接口
 
-##params
+scan({params}, callback(ret, err))
+
+## params
 
 serviceUUIDs
 
 - 类型：数组
 - 描述：（可选项）要扫描的蓝牙4.0设备的服务（service）的 UUID（字符串） 组成的数组，若不传则扫描附近的所有支持蓝牙4.0的设备
 
-##callback(ret)
+## callback(ret)
 
 ret：
 
-- 类型：JSON对象
+- 类型：JSON 对象
 - 内部字段：
 
 ```js
@@ -132,36 +146,38 @@ ret：
 }
 ```
 
-##示例代码
+## 示例代码
 
 ```js
 var ble = api.require('ble');
 ble.scan({
-   serviceUUIDs:['','']
-}, function( ret ){
-    if( ret.status ){
-        alert( '开始扫描' );
+    serviceUUIDs: ['', '']
+}, function(ret) {
+    if (ret.status) {
+        alert('开始扫描');
     }
 });
 ```
 
-##可用性
+## 可用性
 
 iOS系统，Android系统
 
 可提供的1.0.0及更高版本
 
-#**getPeripheral**<div id="3"></div>
+<div id="getPeripheral"></div>
+
+# **getPeripheral**
 
 获取当前扫描到的所有外围设备信息
 
 getPeripheral(callback(ret))
 
-##callback(ret)
+## callback(ret)
 
 ret：
 
-- 类型：JSON对象
+- 类型：JSON 对象
 - 描述：每发现新设备便会回调当前发现的所有蓝牙4.0设备信息
 - 内部字段：
 
@@ -175,35 +191,104 @@ ret：
 }
 ```
 
-##示例代码
+## 示例代码
 
 ```js
 var ble = api.require('ble');
-ble.getPeripheral( function( ret ){
-    if( ret ){
-        api.alert( {msg:JSON.stringify( ret )} );
+ble.getPeripheral(function(ret) {
+    if (ret) {
+        api.alert({ msg: JSON.stringify(ret) });
     }
 });
 ```
 
-##可用性
+## 可用性
 
 iOS系统，Android系统
 
 可提供的1.0.0及更高版本
 
-#**isScanning**<div id="4"></div>
+
+<div id="getPeripheralRssi"></div>
+
+# **getPeripheralRssi**
+
+获取当前扫描到的所有外围设备的 rssi
+
+注意：
+
+本接口仅支持iOS平台，且仅在 iOS8（含）以上系统上使用。iOS7以下系统可在Peripheral的返回信息里获得。
+
+getPeripheralRssi({params},callback(ret, err))
+
+## params
+
+peripheralUUID：
+
+- 类型：字符串
+- 描述：要获取rssi值的外围设备的 UUID 
+
+## callback(ret, err)
+
+ret：
+
+- 类型：JSON 对象
+- 描述：获取的rssi信息
+- 内部字段：
+
+```js
+{
+     status: true,       //布尔类型；是否成功获取rssi，true|false
+     rssi:''             //数字类型；rssi 值
+}
+```
+
+err：
+
+- 类型：JSON 对象
+- 描述：获取rssi失败错误码
+- 内部字段：
+
+```js
+{
+     code:1       //数字类型；错误码，取值范围如下：
+                  //1：peripheralUUID不正确
+                  //2： peripheral 不存在
+                  //3：未知错误
+}
+```
+
+## 示例代码
+
+```js
+var ble = api.require('ble');
+ble.getPeripheralRssi(function(ret) {
+    if (ret.status) {
+        api.alert({ msg: JSON.stringify(ret) });
+    }
+});
+```
+
+## 可用性
+
+iOS系统，Android系统
+
+可提供的1.0.0及更高版本
+
+<div id="isScanning"></div>
+
+# **isScanning**
 
 判断是否正在扫描
 
 isScanning(callback(ret))
 
 
-##callback(ret)
+## callback(ret)
 
 ret：
 
-- 类型：JSON对象
+- 类型：JSON 对象
 - 内部字段：
 
 ```js
@@ -212,49 +297,53 @@ ret：
 }
 ```
 
-##示例代码
+## 示例代码
 
 ```js
 var ble = api.require('ble');
-ble.isScanning(function( ret ){
-    if( ret ){
-        alert( '正在扫描' );
+ble.isScanning(function(ret) {
+    if (ret) {
+        alert('正在扫描');
     }
 });
 ```
 
-##可用性
+## 可用性
 
 iOS系统，Android系统
 
 可提供的1.0.0及更高版本
 
-#**stopScan**<div id="5"></div>
+<div id="stopScan"></div>
 
-停止搜索附近的蓝牙设备，并情况已搜索到的记录在本地的外围设备信息
+# **stopScan**
+
+停止搜索附近的蓝牙设备，并清空已搜索到的记录在本地的外围设备信息
 
 stopScan()
 
-##示例代码
+## 示例代码
 
 ```js
 var ble = api.require('ble');
 ble.stopScan();
 ```
 
-##可用性
+## 可用性
 
 iOS系统，Android系统
 
 可提供的1.0.0及更高版本
 
-#**connect**<div id="6"></div>
+<div id="connect"></div>
+
+# **connect**
 
 连接指定外围设备
 
-connect({params}, callback(ret,err))
+connect({params}, callback(ret, err))
 
-##params
+## params
 
 peripheralUUID：
 
@@ -262,7 +351,7 @@ peripheralUUID：
 - 描述：要连接的外围设备的 UUID 
 
 
-##callback(ret,err)
+## callback(ret, err)
 
 ret:
 
@@ -290,35 +379,36 @@ err:
 }
 ```
 
-##示例代码
+## 示例代码
 
 ```js
 var ble = api.require('ble');
 ble.connect({
     peripheralUUID: ''
-},function(ret,err){
-   if(ret.status) {
-       alert("连接成功！");
-   } else {
-      alert(err.code);
-   }
+}, function(ret, err) {
+    if (ret.status) {
+        alert("连接成功！");
+    } else {
+        alert(err.code);
+    }
 });
 ```
 
-##可用性
+## 可用性
 
 iOS系统，Android系统
 
 可提供的1.0.0及更高版本
 
+<div id="disconnect"></div>
 
-#**disconnect**<div id="7"></div>
+# **disconnect**
 
 断开与指定外围设备的连接
 
-disconnect({params},callback(ret))
+disconnect({params}, callback(ret))
 
-##params
+## params
 
 
 peripheralUUID：
@@ -326,7 +416,7 @@ peripheralUUID：
 - 类型：字符串
 - 描述：要断开连接的外围设备的 UUID 
 
-##callback(ret)
+## callback(ret)
 
 ret:
 
@@ -335,36 +425,39 @@ ret:
 
 ```js
 {
-     status: true      //布尔类型；是否成功断开连接，true|false
+     status: true,       //布尔类型；是否成功断开连接，true|false
+     peripheralUUID:''   //字符串类型；断开外围设备的 UUID
 }
 ```
 
-##示例代码
+## 示例代码
 
 ```js
 var ble = api.require('ble');
 ble.disconnect({
     peripheralUUID: ''
-},function(ret,err){
-    if(ret.status){
-       alert("断开连接成功！");
+}, function(ret, err) {
+    if (ret.status) {
+        alert("断开连接成功！");
     }
 });
 ```
 
-##可用性
+## 可用性
 
 iOS系统，Android系统
 
 可提供的1.0.0及更高版本
 
-#**isConnected**<div id="8"></div>
+<div id="isConnected"></div>
+
+# **isConnected**
 
 判断与指定外围设备是否为连接状态
 
-isConnected({params},callback(ret))
+isConnected({params}, callback(ret))
 
-##params
+## params
 
 peripheralUUID：
 
@@ -375,41 +468,44 @@ peripheralUUID：
 
 ret：
 
-- 类型：JSON对象
+- 类型：JSON 对象
 - 内部字段：
 
 ```js
 {
-    status: true   //布尔类型；是否连接，true|false
+    status: true,       //布尔类型；是否连接，true|false
+    peripheralUUID:''   //字符串类型；外围设备的 UUID
 }
 ```
 
-##示例代码
+## 示例代码
 
 ```js
 var ble = api.require('ble');
 ble.isConnected({
-   peripheralUUID:''
-},function( ret ){
-    if( ret ){
-        alert( '已连接' );
+    peripheralUUID: ''
+}, function(ret) {
+    if (ret) {
+        alert('已连接');
     }
 });
 ```
 
-##可用性
+## 可用性
 
 iOS系统，Android系统
 
 可提供的1.0.0及更高版本
 
-#**retrievePeripheral**<div id="9"></div>
+<div id="retrievePeripheral"></div>
+
+# **retrievePeripheral**
 
 根据 UUID 找到所有匹配的蓝牙外围设备信息**Andaroid 平台暂不支持本接口**
 
 retrievePeripheral({params}, callback(ret))
 
-##params
+## params
 
 peripheralUUIDs：
 
@@ -417,11 +513,11 @@ peripheralUUIDs：
 - 描述：指定的蓝牙外围设备的 UUID 组成的数组
 
 
-##callback(ret)
+## callback(ret)
 
 ret：
 
-- 类型：JSON对象
+- 类型：JSON 对象
 - 描述：若没有则返回空
 - 内部字段：
 
@@ -436,32 +532,34 @@ ret：
 }
 ```
 
-##示例代码
+## 示例代码
 
 ```js
 var ble = api.require('ble');
 ble.retrievePeripheral({
-   peripheralUUIDs: ['','']
-},function( ret ){
-    if( ret ){
-        api.alert( {msg:JSON.stringify( ret )} );
+    peripheralUUIDs: ['', '']
+}, function(ret) {
+    if (ret) {
+        api.alert({ msg: JSON.stringify(ret) });
     }
 });
 ```
 
-##可用性
+## 可用性
 
 iOS系统
 
 可提供的1.0.0及更高版本
 
-#**retrieveConnectedPeripheral**<div id="10"></div>
+<div id="retrieveConnectedPeripheral"></div>
+
+# **retrieveConnectedPeripheral**
 
 根据指定的服务，找到当前系统处于连接状态的蓝牙中包含这个服务的所有蓝牙外围设备信息**Andaroid 平台暂不支持本接口**
 
 retrieveConnectedPeripheral({params}, callback(ret))
 
-##params
+## params
 
 
 serviceUUIDs
@@ -470,11 +568,11 @@ serviceUUIDs
 - 描述：指定的蓝牙4.0设备的服务（service）的 UUID（字符串） 组成的数组
 
 
-##callback(ret)
+## callback(ret)
 
 ret：
 
-- 类型：JSON对象
+- 类型：JSON 对象
 - 描述：若没有则返回空
 - 内部字段：
 
@@ -489,39 +587,41 @@ ret：
 }
 ```
 
-##示例代码
+## 示例代码
 
 ```js
 var ble = api.require('ble');
 ble.retrieveConnectedPeripheral({
-   serviceUUIDs: ['dsfs','sdf']
-},function( ret ){
-    if( ret ){
-        api.alert( {msg:JSON.stringify( ret )} );
+    serviceUUIDs: ['dsfs', 'sdf']
+}, function(ret) {
+    if (ret) {
+        api.alert({ msg: JSON.stringify(ret) });
     }
 });
 ```
 
-##可用性
+## 可用性
 
 iOS系统
 
 可提供的1.0.0及更高版本
 
-#**discoverService**<div id="11"></div>
+<div id="discoverService"></div>
+
+# **discoverService**
 
 根据指定的外围设备 UUID 获取该外围设备的所有服务
 
-discoverService({params}, callback(ret,err))
+discoverService({params}, callback(ret, err))
 
-##params
+## params
 
 peripheralUUID：
 
 - 类型：字符串
 - 描述：指定的蓝牙外围设备的 UUID 
 
-##callback(ret,err)
+## callback(ret, err)
 
 ret:
 
@@ -549,32 +649,34 @@ err:
 }
 ```
 
-##示例代码
+## 示例代码
 
 ```js
 var ble = api.require('ble');
 ble.discoverService({
     peripheralUUID: ''
-},function(ret){
-   if(ret) {
-       api.alert( {msg:JSON.stringify( ret )} );
-   } 
+}, function(ret) {
+    if (ret) {
+        api.alert({ msg: JSON.stringify(ret) });
+    }
 });
 ```
 
-##可用性
+## 可用性
 
 iOS系统，Android系统
 
 可提供的1.0.0及更高版本
 
-#**discoverCharacteristics**<div id="12"></div>
+<div id="discoverCharacteristics"></div>
+
+# **discoverCharacteristics**
 
 根据指定的外围设备 UUID 及其服务 UUID 获取该外围设备的所有特征（Characteristic）
 
-discoverCharacteristics({params}, callback(ret,err))
+discoverCharacteristics({params}, callback(ret, err))
 
-##params
+## params
 
 serviceUUID
 
@@ -587,7 +689,7 @@ peripheralUUID：
 - 类型：字符串
 - 描述：指定的蓝牙外围设备的 UUID 
 
-##callback(ret,err)
+## callback(ret, err)
 
 ret:
 
@@ -605,7 +707,7 @@ ret:
                          //writeable：
                          //readEncryptionRequired：
                          //writeEncryptionRequired：
-        propertie: ''    //字符串类型；特征的属性，取值范围如下：
+        properties: ''    //字符串类型；特征的属性，取值范围如下：
                          //broadcast：
                          //read：
                          //writeWithoutResponse：
@@ -636,32 +738,34 @@ err:
 }
 ```
 
-##示例代码
+## 示例代码
 
 ```js
 var ble = api.require('ble');
 ble.discoverCharacteristics({
     peripheralUUID: ''
-},function(ret){
-   if(ret) {
-       api.alert( {msg:JSON.stringify( ret )} );
-   } 
+}, function(ret) {
+    if (ret) {
+        api.alert({ msg: JSON.stringify(ret) });
+    }
 });
 ```
 
-##可用性
+## 可用性
 
 iOS系统，Android系统
 
 可提供的1.0.0及更高版本
 
-#**discoverDescriptorsForCharacteristic**<div id="13"></div>
+<div id="discoverDescriptorsForCharacteristic"></div>
+
+# **discoverDescriptorsForCharacteristic**
 
 根据指定的外围设备 UUID 及其服务 UUID 和特征 UUID 获取该外围设备的所有描述符（Descriptor）
 
-discoverDescriptorsForCharacteristic({params}, callback(ret,err))
+discoverDescriptorsForCharacteristic({params}, callback(ret, err))
 
-##params
+## params
 
 peripheralUUID：
 
@@ -679,7 +783,7 @@ characteristicUUID
 - 类型：字符串
 - 描述：指定的特征的 UUID 
 
-##callback(ret,err)
+## callback(ret, err)
 
 ret:
 
@@ -717,7 +821,7 @@ err:
 }
 ```
 
-##示例代码
+## 示例代码
 
 ```js
 var ble = api.require('ble');
@@ -725,26 +829,28 @@ ble.discoverDescriptorsForCharacteristic({
     peripheralUUID: '',
     serviceUUID: '',
     characteristicUUID: ''
-},function(ret){
-   if(ret) {
-       api.alert( {msg:JSON.stringify( ret )} );
-   } 
+}, function(ret) {
+    if (ret) {
+        api.alert({ msg: JSON.stringify(ret) });
+    }
 });
 ```
 
-##可用性
+## 可用性
 
 iOS系统，Android系统
 
 可提供的1.0.0及更高版本
 
-#**setNotify**<div id="14"></div>
+<div id="setNotify"></div>
+
+# **setNotify**
 
 根据指定的外围设备 UUID 及其服务 UUID 和特征 UUID 监听数据回发
 
-setNotify({params}, callback(ret,err))
+setNotify({params}, callback(ret, err))
 
-##params
+## params
 
 peripheralUUID：
 
@@ -761,7 +867,7 @@ characteristicUUID
 - 类型：字符串
 - 描述：指定的特征的 UUID 
 
-##callback(ret,err)
+## callback(ret, err)
 
 ret:
 
@@ -814,7 +920,7 @@ err:
 }
 ```
 
-##示例代码
+## 示例代码
 
 ```js
 var ble = api.require('ble');
@@ -822,49 +928,50 @@ ble.setNotify({
     peripheralUUID: '',
     serviceUUID: '',
     characteristicUUID: ''
-},function(ret){
-   if(ret) {
-       api.alert( {msg:JSON.stringify( ret )} );
-   } 
+}, function(ret) {
+    if (ret) {
+        api.alert({ msg: JSON.stringify(ret) });
+    }
 });
 ```
 
-##可用性
+## 可用性
 
 iOS系统，Android系统
 
 可提供的1.0.0及更高版本
 
+<div id="stopNotify"></div>
 
-<div id="141"></div>
-
-#**stopNotify**
+# **stopNotify**
 
 停止监听数据。调用setNotify接口后开始监听数据，不需要继续监听时调用disconnect断开链接，在iOS 平台上还需要调用此接口来停止监听。
 
 stopNotify()
 
 
-##示例代码
+## 示例代码
 
 ```js
 var ble = api.require('ble');
 ble.stopNotify();
 ```
 
-##可用性
+## 可用性
 
 iOS系统
 
 可提供的1.0.4及更高版本
 
-#**readValueForCharacteristic**<div id="15"></div>
+<div id="readValueForCharacteristic"></div>
+
+# **readValueForCharacteristic**
 
 根据指定的外围设备 UUID 及其服务 UUID 和特征 UUID 读取数据
 
-readValueForCharacteristic({params}, callback(ret,err))
+readValueForCharacteristic({params}, callback(ret, err))
 
-##params
+## params
 
 peripheralUUID：
 
@@ -881,7 +988,7 @@ characteristicUUID
 - 类型：字符串
 - 描述：指定的特征的 UUID 
 
-##callback(ret,err)
+## callback(ret, err)
 
 ret:
 
@@ -934,7 +1041,7 @@ err:
 }
 ```
 
-##示例代码
+## 示例代码
 
 ```js
 var ble = api.require('ble');
@@ -942,26 +1049,28 @@ ble.readValueForCharacteristic({
     peripheralUUID: '',
     serviceUUID: '',
     characteristicUUID: ''
-},function(ret){
-   if(ret) {
-       api.alert( {msg:JSON.stringify( ret )} );
-   } 
+}, function(ret) {
+    if (ret) {
+        api.alert({ msg: JSON.stringify(ret) });
+    }
 });
 ```
 
-##可用性
+## 可用性
 
 iOS系统，Android系统
 
 可提供的1.0.0及更高版本
 
-#**readValueForDescriptor**<div id="16"></div>
+<div id="readValueForDescriptor"></div>
+
+# **readValueForDescriptor**
 
 根据指定的外围设备 UUID 及其服务 UUID 和特征 UUID 及其描述符获取数据
 
-readValueForDescriptor({params}, callback(ret,err))
+readValueForDescriptor({params}, callback(ret, err))
 
-##params
+## params
 
 peripheralUUID：
 
@@ -984,7 +1093,7 @@ descriptorUUID
 - 类型：字符串
 - 描述：指定的描述符的 UUID 
 
-##callback(ret,err)
+## callback(ret, err)
 
 ret:
 
@@ -1024,7 +1133,7 @@ err:
 }
 ```
 
-##示例代码
+## 示例代码
 
 ```js
 var ble = api.require('ble');
@@ -1033,26 +1142,28 @@ ble.readValueForDescriptor({
     serviceUUID: '',
     characteristicUUID: '',
     descriptorUUID: ''
-},function(ret){
-   if(ret) {
-       api.alert( {msg:JSON.stringify( ret )} );
-   } 
+}, function(ret) {
+    if (ret) {
+        api.alert({ msg: JSON.stringify(ret) });
+    }
 });
 ```
 
-##可用性
+## 可用性
 
 iOS系统，Android系统
 
 可提供的1.0.0及更高版本
 
-#**writeValueForCharacteristic**<div id="17"></div>
+<div id="writeValueForCharacteristic"></div>
+
+# **writeValueForCharacteristic**
 
 根据指定的外围设备 UUID 及其服务 UUID 和特征 UUID 写数据
 
-writeValueForCharacteristic({params}, callback(ret,err))
+writeValueForCharacteristic({params}, callback(ret, err))
 
-##params
+## params
 
 peripheralUUID：
 
@@ -1077,14 +1188,14 @@ value
 writeType
 
 - 类型：字符串
-- 描述：（可选项）写入数据时的类型，本参数只在 iOS 平台上有效，android 平台忽略本参数
+- 描述：（可选项）写入数据时的类型
 - 默认：auto
 - 取值范围：
-- auto：模块自动选择类型
-- response：有回调
-- withoutResponse：无回调
+	- auto：模块自动选择类型
+	- response：有回调
+	- withoutResponse：无回调
 
-##callback(ret,err)
+## callback(ret, err)
 
 ret:
 
@@ -1137,7 +1248,7 @@ err:
 }
 ```
 
-##示例代码
+## 示例代码
 
 ```js
 var ble = api.require('ble');
@@ -1145,27 +1256,29 @@ ble.writeValueForCharacteristic({
     peripheralUUID: '',
     serviceUUID: '',
     characteristicUUID: '',
-    value:''
-},function(ret){
-   if(ret) {
-       api.alert( {msg:JSON.stringify( ret )} );
-   } 
+    value: ''
+}, function(ret) {
+    if (ret) {
+        api.alert({ msg: JSON.stringify(ret) });
+    }
 });
 ```
 
-##可用性
+## 可用性
 
 iOS系统，Android系统
 
 可提供的1.0.0及更高版本
 
-#**writeValueForDescriptor**<div id="18"></div>
+<div id="writeValueForDescriptor"></div>
+
+# **writeValueForDescriptor**
 
 根据指定的外围设备 UUID 及其服务 UUID 和特征 UUID 及其描述符发送数据
 
-writeValueForDescriptor({params}, callback(ret,err))
+writeValueForDescriptor({params}, callback(ret, err))
 
-##params
+## params
 
 peripheralUUID：
 
@@ -1192,7 +1305,7 @@ value
 - 类型：字符串
 - 描述：要发送的数据，十六进制的字符串
 
-##callback(ret,err)
+## callback(ret, err)
 
 ret:
 
@@ -1253,7 +1366,7 @@ err:
 }
 ```
 
-##示例代码
+## 示例代码
 
 ```js
 var ble = api.require('ble');
@@ -1262,14 +1375,201 @@ ble.writeValueForDescriptor({
     serviceUUID: '',
     characteristicUUID: '',
     descriptorUUID: ''
-},function(ret){
-   if(ret) {
-       api.alert( {msg:JSON.stringify( ret )} );
-   } 
+}, function(ret) {
+    if (ret) {
+        api.alert({ msg: JSON.stringify(ret) });
+    }
 });
 ```
 
-##可用性
+## 可用性
+
+iOS系统，Android系统
+
+可提供的1.0.0及更高版本
+
+<div id="connectPeripherals"></div>
+
+# **connectPeripherals**
+
+连接多台外围设备
+
+connectPeripherals({params}, callback(ret))
+
+## params
+
+peripheralUUIDs：
+
+- 类型：数组
+- 描述：要连接的外围设备的 UUID 字符串组成的数组
+
+
+## callback(ret)
+
+ret:
+
+- 类型：JSON 对象
+- 描述：peripheralUUIDs 传入多少个 id 则本回调执行多少次
+- 内部字段：
+
+```js
+{
+     status: true      //布尔类型；是否连接成功，true|false
+     peripheralUUID:'' //字符串类型；所要链接的外围设备的 id
+}
+```
+
+## 示例代码
+
+```js
+var ble = api.require('ble');
+ble.peripheralUUIDs({
+    peripheralUUIDs: ['', '', '']
+}, function(ret, err) {
+    if (ret.status) {
+        alert(ret.peripheralUUID + "连接成功！");
+    }
+});
+```
+
+## 可用性
+
+iOS系统，Android系统
+
+可提供的1.0.0及更高版本
+
+<div id="setSimpleNotify"></div>
+
+# **setSimpleNotify**
+
+根据指定的外围设备 UUID 及其服务 UUID 和特征 UUID 监听数据
+
+setSimpleNotify({params}, callback(ret, err))
+
+## params
+
+peripheralUUID：
+
+- 类型：字符串
+- 描述：指定的蓝牙外围设备的 UUID 
+
+serviceUUID
+
+- 类型：字符串
+- 描述：指定的服务的 UUID 
+
+characteristicUUID
+
+- 类型：字符串
+- 描述：指定的特征的 UUID 
+
+## callback(ret, err)
+
+ret:
+
+- 类型：JSON 对象
+- 描述：每有数据接收便会触发此回调
+- 内部字段：
+
+```js
+{
+     status: true        //布尔类型；是否获取数据，true|false  
+}
+```
+
+err:
+
+- 类型：JSON 对象
+- 内部字段：
+
+```js
+{
+     code: 1          //数字类型；连接失败时返回错误码，取值范围如下：
+                      //1：peripheralUUID 为空
+                      //2：serviceUUID 为空
+                      //3：characteristicUUID 为空
+                      //4：未找到指定特征（characteristic）
+                      //5：未找到指定服务（service）
+                      //6：尚未搜索到该蓝牙设备
+}
+```
+
+## 示例代码
+
+```js
+var ble = api.require('ble');
+ble.setSimpleNotify({
+    peripheralUUID: '',
+    serviceUUID: '',
+    characteristicUUID: ''
+}, function(ret, err) {
+    if (!ret.status) {
+        api.alert({ msg: JSON.stringify(err) });
+    }
+});
+```
+
+## 可用性
+
+iOS系统，Android系统
+
+<div id="getAllSimpleNotifyData"></div>
+
+# **getAllSimpleNotifyData**
+
+获取模块当前缓存的所监听蓝牙设备的所有数据
+
+getAllSimpleNotifyData(callback(ret))
+
+## callback(ret)
+
+ret:
+
+- 类型：JSON 对象
+- 内部字段：
+
+```js
+{
+     '':                  //模块当前缓存到的外围设备的 UUID，以此为 key 读取取相应的数据信息
+     {                    //JSON对象；模块当前缓存到的外围设备发来的数据信息 
+        serviceUUID: '',  //字符串类型；服务的 UUID 
+        characterUUID: '',//字符串类型；特征的 UUID 
+        data:['','','']   //数组类型；特征的值组成的数组，内部元素值为字符串类型
+     }       
+}
+```
+
+## 示例代码
+
+```js
+var ble = api.require('ble');
+ble.getAllSimpleNotifyData(function(ret) {
+    api.alert({ msg: JSON.stringify(ret) });
+});
+```
+
+## 可用性
+
+iOS系统，Android系统
+
+可提供的1.0.0及更高版本
+
+<div id="clearAllSimpleNotifyData"></div>
+
+# **clearAllSimpleNotifyData**
+
+清空模块当前缓存的所监听蓝牙设备的所有数据
+
+clearAllSimpleNotifyData()
+
+## 示例代码
+
+```js
+var ble = api.require('ble');
+ble.clearAllSimpleNotifyData();
+```
+
+## 可用性
 
 iOS系统，Android系统
 
