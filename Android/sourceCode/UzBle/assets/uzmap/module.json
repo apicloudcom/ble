@@ -1,8 +1,0 @@
-{
-	modules:[
-		{
-		    name:'ble',
-		    class:'com.apicloud.uzble.UzBle'
-		}
-	]
-}

@@ -93,11 +93,14 @@ static char bleExtendKey;
 }
 
 - (void)scan:(NSDictionary *)paramsDict_ {
-    NSArray *serviceIDs = [paramsDict_ arrayValueForKey:@"serviceUUIDS" defaultValue:@[]];
+    
+    NSArray *serviceIDs = [paramsDict_ arrayValueForKey:@"serviceUUIDs" defaultValue:@[]];
+    
     NSMutableArray *allCBUUID = [self creatCBUUIDAry:serviceIDs];
     if (allCBUUID.count == 0) {
         allCBUUID = nil;
     }
+    
     [_centralManager scanForPeripheralsWithServices:allCBUUID options:nil];
     NSInteger scanCbid = [paramsDict_ integerValueForKey:@"cbId" defaultValue:-1];
     if (_centralManager) {
@@ -117,6 +120,7 @@ static char bleExtendKey;
                 [sendAry addObject:peripheral];
             }
         }
+        
         [self sendResultEventWithCallbackId:getCurDvcCbid dataDict:[NSDictionary dictionaryWithObject:sendAry forKey:@"peripherals"] errDict:nil doDelete:YES];
     } else {
         [self sendResultEventWithCallbackId:getCurDvcCbid dataDict:nil errDict:nil doDelete:YES];
@@ -135,11 +139,12 @@ static char bleExtendKey;
         [self callbackCodeInfo:NO withCode:2 andCbid:getPeripheralRssiCbid doDelete:YES andErrorInfo:nil];
         return;
     }
+    peripheral.delegate = self;
     NSNumber *cbid = [NSNumber numberWithInteger:getPeripheralRssiCbid];
     objc_setAssociatedObject(peripheral, &bleExtendKey, cbid, OBJC_ASSOCIATION_RETAIN_NONATOMIC);
     [peripheral readRSSI];
 }
-
+//获取peripheral的RSSI的delegate
 - (void)peripheral:(CBPeripheral *)peripheral didReadRSSI:(NSNumber *)RSSI error:(nullable NSError *)error NS_AVAILABLE(NA, 8_0) {
     NSNumber *getPeripheralRssiCbid = (NSNumber *)objc_getAssociatedObject(peripheral, &bleExtendKey);
     if (getPeripheralRssiCbid) {
@@ -180,6 +185,7 @@ static char bleExtendKey;
         [self callbackCodeInfo:NO withCode:1 andCbid:connectCbid doDelete:NO andErrorInfo:nil];
         return;
     }
+   
     CBPeripheral *peripheral = [_allPeripheral objectForKey:peripheralUUID];
     if (peripheral && [peripheral isKindOfClass:[CBPeripheral class]]) {
         if(peripheral.state  == CBPeripheralStateConnected) {
@@ -866,6 +872,15 @@ static char bleExtendKey;
 }
 #pragma mark 扫描设备的回调，大概每秒十次的频率在重复回调---发型周围设备回调
 - (void)centralManager:(CBCentralManager *)central didDiscoverPeripheral:(CBPeripheral *)peripheral advertisementData:(NSDictionary<NSString *, id> *)advertisementData RSSI:(NSNumber *)RSSI {
+    
+    NSString * name =  advertisementData[CBAdvertisementDataLocalNameKey];
+//自定义数据，可配合硬件工程师获取mac地址
+//    NSData *data = [advertisementData objectForKey:@"kCBAdvDataManufacturerData"];
+//    NSString *aStr = [self hexStringFromData:data];//[[NSString alloc] initWithData:data encoding:NSASCIIStringEncoding];
+//    if ([aStr isKindOfClass:[NSString class]] && aStr.length>0) {
+//        NSLog(@"macStr:%@",aStr);
+//    }
+    
     if (!peripheral.identifier) {
         return;
     }
@@ -875,12 +890,15 @@ static char bleExtendKey;
     }
     if([[_allPeripheral allValues] containsObject:peripheral]) {//更新旧设备的信号强度值
         NSMutableDictionary *targetPerInfo = [_allPeripheralInfo objectForKey:periphoeralUUID];
-        if (targetPerInfo) {
+        if (targetPerInfo && RSSI) {
             [targetPerInfo setObject:RSSI forKey:@"rssi"];
         }
     } else {//发现新设备
         [_allPeripheral setObject:peripheral forKey:periphoeralUUID];
         NSMutableDictionary *peripheralInfo = [self getAllPeriphoerDict:peripheral];
+        if (RSSI) {
+            [peripheralInfo setValue:RSSI forKey:@"rssi"];
+        }
         [_allPeripheralInfo setObject:peripheralInfo forKey:periphoeralUUID];
     }
 }
