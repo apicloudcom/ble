@@ -19,7 +19,9 @@ import com.samsung.android.sdk.bt.gatt.BluetoothGattCharacteristic;
 import com.samsung.android.sdk.bt.gatt.BluetoothGattDescriptor;
 import com.samsung.android.sdk.bt.gatt.BluetoothGattService;
 import com.uzmap.pkg.uzcore.uzmodule.UZModuleContext;
-
+/***
+ * 保留原有数据
+ */
 public class SamsungBle implements IBle {
 	public static final UUID DESC_CCC = UUID
 			.fromString("00002902-0000-1000-8000-00805f9b34fb");
@@ -427,8 +429,9 @@ public class SamsungBle implements IBle {
 
 		@Override
 		public void onScanResult(BluetoothDevice device, int rssi, byte[] arg2) {
+			String strScanRecord = new String(Hex.encodeHex(arg2));
 			mScanBluetoothDeviceMap.put(device.getAddress(), new BleDeviceInfo(
-					device, rssi));
+					device, rssi,strScanRecord));
 		}
 
 		@Override

@@ -4,9 +4,10 @@
     <author email="developer@apicloud.com" href="http://www.apicloud.com">
         developer
     </author>
-    <content src="index.html" />
+    <content src="main-con-ble.html" />
     <access origin="*" />
     <preference name="bounces" value="true" />
+    <preference name="debug" value="true" />
     <preference name="customRefreshHeader" value="cusHeader" />
     <feature name="wx">
         <param name="apikey" value="*********" />

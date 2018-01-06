@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+	<meta charset="utf-8">
+	<meta name="viewport" content="maximum-scale=1.0,minimum-scale=1.0,user-scalable=0,width=device-width,initial-scale=1.0" />
+	<title>title</title>
+	<style>
+		body {
+			background:#FFF;
+			padding: 60px;
+			margin-top: 90px;
+			height: 1000px
+		}
+	</style>
+</head>
+
+<body>
+	<button onclick="openFrame1()">openFrame1</button>
+	<button onclick="initManager()">initManager</button>
+	<button onclick="connect()">connect</button>
+	<button type="button" onclick="getPeripheral()" name="button">getPeripheral</button>
+</body>
+<script type="text/javascript">
+
+		function initManager() {
+		 var ble = api.require('ble');
+			ble.initManager({
+				single:true
+			},function(ret) {
+				if (ret.state == "poweredOn") {
+					api.alert({
+						msg: "初始化成功"
+					});
+				}
+			});
+		};
+	function getPeripheral() {
+		var ble = api.require('ble');
+		ble.getPeripheral(function(ret) {
+			alert(JSON.stringify(ret));
+		});
+	}
+	
+	
+		function connect() {
+			var ble = api.require('ble');
+			ble.connect({
+			  peripheralUUID: "CF:FD:C5:28:20:26",
+			}, function(ret, err) {
+			   alert(JSON.stringify(ret));
+			});
+		}
+		
+				function openFrame1() {
+			alert(11);
+			api.openFrame({
+				name: 'page2',
+				url: './ble.html',
+				rect: {
+					x: 0,
+					y: 0,
+					w: 320,
+					h: 480
+				},
+				pageParam: {
+					name: 'test'
+				},
+				bounces: true,
+				bgColor: 'rgba(0,0,0,0)',
+				vScrollBarEnabled: true,
+				hScrollBarEnabled: true
+			});
+
+		}
+	
+
+</script>
+
+</html>

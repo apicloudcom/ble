@@ -20,7 +20,11 @@ import com.broadcom.bt.gatt.BluetoothGattCharacteristic;
 import com.broadcom.bt.gatt.BluetoothGattDescriptor;
 import com.broadcom.bt.gatt.BluetoothGattService;
 import com.uzmap.pkg.uzcore.uzmodule.UZModuleContext;
-
+/***
+ * 保留原有数据,
+ * @author baoch
+ *
+ */
 public class BroadcomBle implements IBle {
 	public static final UUID DESC_CCC = UUID
 			.fromString("00002902-0000-1000-8000-00805f9b34fb");
@@ -56,6 +60,7 @@ public class BroadcomBle implements IBle {
 		mSimpleNotifyCallBackMap = new HashMap<String, Ble>();
 		mConnectsCallBackMap = new HashMap<String, UZModuleContext>();
 		mNotifyData = new JSONObject();
+	
 	}
 
 	@Override
@@ -430,8 +435,9 @@ public class BroadcomBle implements IBle {
 
 		@Override
 		public void onScanResult(BluetoothDevice device, int rssi, byte[] arg2) {
+			String strScanRecord = new String(Hex.encodeHex(arg2));
 			mScanBluetoothDeviceMap.put(device.getAddress(), new BleDeviceInfo(
-					device, rssi));
+					device, rssi,strScanRecord));
 		}
 
 		@Override

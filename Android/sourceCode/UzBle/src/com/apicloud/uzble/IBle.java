@@ -6,8 +6,13 @@ import java.util.UUID;
 import org.json.JSONArray;
 
 import com.uzmap.pkg.uzcore.uzmodule.UZModuleContext;
-
+/***
+ * 定义了一些使用方法的接口；
+ * @author 邓宝成
+ *
+ */
 public interface IBle {
+	//要扫描的蓝牙4.0设备的服务（service）的 UUID（字符串） 组成的数组
 	public void scan(UUID[] uuids);
 
 	public Map<String, BleDeviceInfo> getPeripheral();
@@ -22,7 +27,7 @@ public interface IBle {
 			JSONArray address);
 
 	public void disconnect(UZModuleContext moduleContext, String address);
-
+	//连接状态;
 	public boolean isConnected(String address);
 
 	public void discoverService(UZModuleContext moduleContext, String address);

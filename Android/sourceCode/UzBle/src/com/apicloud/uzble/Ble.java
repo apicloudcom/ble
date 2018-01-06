@@ -1,7 +1,11 @@
 package com.apicloud.uzble;
 
 import com.uzmap.pkg.uzcore.uzmodule.UZModuleContext;
-
+/**
+ * ble bean 类；
+ * @author 邓宝成
+ *
+ */
 public class Ble {
 	private String peripheralUUID;
 	private String serviceId;

@@ -1,5 +1,5 @@
 /** Automatically generated file. DO NOT MODIFY */
-package com.apicloud.uzble;
+package com.apicloud.ble;
 
 public final class BuildConfig {
     public final static boolean DEBUG = true;

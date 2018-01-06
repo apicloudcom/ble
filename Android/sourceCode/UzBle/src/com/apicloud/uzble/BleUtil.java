@@ -7,11 +7,20 @@ import android.content.pm.PackageManager;
 public class BleUtil {
 	public static boolean isBlePermission(Context context) {
 		PackageManager pm = context.getPackageManager();
+		/***
+		 * 判断应用程序是否允许程序连接到已配对的蓝牙设备访问的权限；
+		 */
 		boolean permission = (PackageManager.PERMISSION_GRANTED == pm
 				.checkPermission("android.permission.BLUETOOTH",
 						context.getPackageName()));
 		return permission;
 	}
+	
+	/***
+	 *  判断 Android版本是否支持蓝牙；
+	 * @param context
+	 * @return
+	 */
 
 	public static boolean isBleSupported(Context context) {
 		if (context.getPackageManager().hasSystemFeature(

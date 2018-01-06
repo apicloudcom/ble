@@ -8,6 +8,7 @@
 
 /* Begin PBXBuildFile section */
 		038F5D391CA8CF0900F346A7 /* ACBle.m in Sources */ = {isa = PBXBuildFile; fileRef = 038F5D381CA8CF0900F346A7 /* ACBle.m */; };
+		253CB0C31FE9353400FAC3DC /* BLESingle.m in Sources */ = {isa = PBXBuildFile; fileRef = 253CB0C21FE9353300FAC3DC /* BLESingle.m */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXCopyFilesBuildPhase section */
@@ -28,6 +29,8 @@
 		038F5D381CA8CF0900F346A7 /* ACBle.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = ACBle.m; sourceTree = "<group>"; };
 		038F5D3B1CA8CF4E00F346A7 /* NSDictionaryUtils.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = NSDictionaryUtils.h; sourceTree = "<group>"; };
 		038F5D3C1CA8CF5E00F346A7 /* UZModule.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = UZModule.h; sourceTree = "<group>"; };
+		253CB0C11FE9353300FAC3DC /* BLESingle.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = BLESingle.h; sourceTree = "<group>"; };
+		253CB0C21FE9353300FAC3DC /* BLESingle.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = BLESingle.m; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -63,6 +66,8 @@
 			children = (
 				038F5D371CA8CF0900F346A7 /* ACBle.h */,
 				038F5D381CA8CF0900F346A7 /* ACBle.m */,
+				253CB0C11FE9353300FAC3DC /* BLESingle.h */,
+				253CB0C21FE9353300FAC3DC /* BLESingle.m */,
 			);
 			path = Bluetooth4;
 			sourceTree = "<group>";
@@ -133,6 +138,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				038F5D391CA8CF0900F346A7 /* ACBle.m in Sources */,
+				253CB0C31FE9353400FAC3DC /* BLESingle.m in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
