@@ -4,7 +4,7 @@
     android:versionCode="2"
     android:versionName="1.0.0" >
 
-    <uses-sdk android:minSdkVersion="9" android:targetSdkVersion="20" />
+    <uses-sdk android:minSdkVersion="18" android:targetSdkVersion="20" />
     
     <supports-screens
         android:anyDensity="true"
@@ -31,6 +31,7 @@
     <uses-permission android:name="android.permission.BLUETOOTH_ADMIN" />
      <!-- Android6.0 蓝牙扫描才需要-->
     <uses-permission-sdk-23 android:name="android.permission.ACCESS_COARSE_LOCATION"/>
+    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
     
     <application android:name="com.uzmap.pkg.uzapp.UZApplication"
         android:allowBackup="true"

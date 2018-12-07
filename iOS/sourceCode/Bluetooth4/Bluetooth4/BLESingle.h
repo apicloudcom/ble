@@ -41,4 +41,6 @@
 
 - (void)clearAllSimpleNotifyData;
 
+- (void)clean;
+
 @end

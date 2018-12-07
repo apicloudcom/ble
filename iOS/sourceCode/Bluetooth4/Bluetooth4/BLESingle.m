@@ -119,8 +119,15 @@ static BLESingle *bleInstance = nil;
 }
 
 - (void)scan:(NSDictionary *)paramsDict_ callbackBlock:(void(^)(BOOL success))callback{
-    
     NSArray *serviceIDs = [paramsDict_ arrayValueForKey:@"serviceUUIDs" defaultValue:@[]];
+    BOOL clean = [paramsDict_ boolValueForKey:@"clean" defaultValue:YES];
+    
+    if (clean) {
+        //先清空上次缓存
+        [self cleanStoredPeripheral];
+        self.allPeripheral = [NSMutableDictionary dictionary];
+        self.allPeripheralInfo = [NSMutableDictionary dictionary];
+    }
     
     NSMutableArray *allCBUUID = [self creatCBUUIDAry:serviceIDs];
     if (allCBUUID.count == 0) {
@@ -133,6 +140,12 @@ static BLESingle *bleInstance = nil;
     } else {
         callback(NO);
     }
+}
+
+- (void)clean {
+    [self cleanStoredPeripheral];
+    self.allPeripheral = [NSMutableDictionary dictionary];
+    self.allPeripheralInfo = [NSMutableDictionary dictionary];
 }
 
 - (void)getPeripheral:(NSDictionary *)paramsDict callbackBlock:(void(^)(NSDictionary *sendDict))callback {
@@ -193,9 +206,9 @@ static BLESingle *bleInstance = nil;
 - (void)stopScan {
     if (_centralManager) {
         [_centralManager stopScan];
-        [self cleanStoredPeripheral];
-        self.allPeripheral = [NSMutableDictionary dictionary];
-        self.allPeripheralInfo = [NSMutableDictionary dictionary];
+//        [self cleanStoredPeripheral];
+//        self.allPeripheral = [NSMutableDictionary dictionary];
+//        self.allPeripheralInfo = [NSMutableDictionary dictionary];
     }
 }
 
@@ -228,7 +241,7 @@ static BLESingle *bleInstance = nil;
     disconnectClick = YES;
     CBPeripheral *peripheral = [_allPeripheral objectForKey:peripheralUUID];
     if (peripheral && [peripheral isKindOfClass:[CBPeripheral class]]) {
-        if(peripheral.state  == CBPeripheralStateConnected) {
+        if(peripheral.state != CBPeripheralStateDisconnected) {
             [_centralManager cancelPeripheralConnection:peripheral];
         } else {
             disconnectClick = NO;
@@ -278,6 +291,8 @@ static BLESingle *bleInstance = nil;
         } else {
             callback(NO,peripheral.identifier.UUIDString);
         }
+    }else {
+        callback(NO,peripheral.identifier.UUIDString);
     }
 }
 

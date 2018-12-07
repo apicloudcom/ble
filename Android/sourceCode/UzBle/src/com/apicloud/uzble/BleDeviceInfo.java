@@ -1,17 +1,22 @@
 package com.apicloud.uzble;
+
 import android.bluetooth.BluetoothDevice;
 
 public class BleDeviceInfo {
-	//扫描设备的device
+	// 扫描设备的device
 	private BluetoothDevice bluetoothDevice;
-	//信号强度;
+	// 信号强度;
 	private int rssi;
-	//广播包数据
+	// 广播包数据
+
+	public String deviceName;
+
 	private String strScanRecord;
-	public BleDeviceInfo(BluetoothDevice bluetoothDevice, int rssi,String strScanRecord) {
+
+	public BleDeviceInfo(BluetoothDevice bluetoothDevice, int rssi, String strScanRecord) {
 		this.bluetoothDevice = bluetoothDevice;
 		this.rssi = rssi;
-		this.strScanRecord=strScanRecord;
+		this.strScanRecord = strScanRecord;
 	}
 
 	public BluetoothDevice getBluetoothDevice() {
@@ -29,15 +34,14 @@ public class BleDeviceInfo {
 	public void setRssi(int rssi) {
 		this.rssi = rssi;
 	}
-	
+
 	public String getstrScanRecord() {
 		return strScanRecord;
-		
+
 	}
 
 	public void setstrScanRecord(String strScanRecord) {
 		this.strScanRecord = strScanRecord;
 	}
-	
-	
+
 }

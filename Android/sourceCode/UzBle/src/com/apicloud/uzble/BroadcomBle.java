@@ -20,14 +20,15 @@ import com.broadcom.bt.gatt.BluetoothGattCharacteristic;
 import com.broadcom.bt.gatt.BluetoothGattDescriptor;
 import com.broadcom.bt.gatt.BluetoothGattService;
 import com.uzmap.pkg.uzcore.uzmodule.UZModuleContext;
+
 /***
  * 保留原有数据,
+ * 
  * @author baoch
- *
+ * 
  */
 public class BroadcomBle implements IBle {
-	public static final UUID DESC_CCC = UUID
-			.fromString("00002902-0000-1000-8000-00805f9b34fb");
+	public static final UUID DESC_CCC = UUID.fromString("00002902-0000-1000-8000-00805f9b34fb");
 	private BluetoothAdapter mBluetoothAdapter;
 	private BluetoothGatt mBluetoothGatt;
 	private Map<String, UZModuleContext> mConnectCallBackMap;
@@ -46,8 +47,7 @@ public class BroadcomBle implements IBle {
 
 	public BroadcomBle(Context context) {
 		mBluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
-		BluetoothGattAdapter.getProfileProxy(context, mProfileServiceListener,
-				BluetoothGattAdapter.GATT);
+		BluetoothGattAdapter.getProfileProxy(context, mProfileServiceListener, BluetoothGattAdapter.GATT);
 		mScanBluetoothDeviceMap = new HashMap<String, BleDeviceInfo>();
 		mConnectCallBackMap = new HashMap<String, UZModuleContext>();
 		mDiscoverServiceCallBackMap = new HashMap<String, UZModuleContext>();
@@ -60,7 +60,6 @@ public class BroadcomBle implements IBle {
 		mSimpleNotifyCallBackMap = new HashMap<String, Ble>();
 		mConnectsCallBackMap = new HashMap<String, UZModuleContext>();
 		mNotifyData = new JSONObject();
-	
 	}
 
 	@Override
@@ -92,6 +91,14 @@ public class BroadcomBle implements IBle {
 			mIsScanning = false;
 		}
 	}
+	
+
+	@Override
+	public void clean() {
+		if (mScanBluetoothDeviceMap==null&&mScanBluetoothDeviceMap.size()>0) {
+			this.mScanBluetoothDeviceMap.clear();
+		}
+	}
 
 	@Override
 	public void connect(UZModuleContext moduleContext, String address) {
@@ -107,16 +114,14 @@ public class BroadcomBle implements IBle {
 	}
 
 	@Override
-	public void connectPeripherals(UZModuleContext moduleContext,
-			JSONArray address) {
+	public void connectPeripherals(UZModuleContext moduleContext, JSONArray address) {
 		if (address == null || address.length() == 0) {
 			connectCallBack(moduleContext, false, 1);
 			return;
 		}
 		for (int i = 0; i < address.length(); i++) {
 			mConnectsCallBackMap.put(address.optString(i), moduleContext);
-			BluetoothDevice device = mBluetoothAdapter.getRemoteDevice(address
-					.optString(i));
+			BluetoothDevice device = mBluetoothAdapter.getRemoteDevice(address.optString(i));
 			if (!mBluetoothGatt.connect(device, false)) {
 				connectsCallBack(moduleContext, false, 2, address.optString(i));
 			}
@@ -168,10 +173,8 @@ public class BroadcomBle implements IBle {
 	}
 
 	@Override
-	public void discoverCharacteristics(UZModuleContext moduleContext,
-			String address, String serviceUUID) {
-		List<BluetoothGattCharacteristic> characteristics = characteristics(
-				address, serviceUUID);
+	public void discoverCharacteristics(UZModuleContext moduleContext, String address, String serviceUUID) {
+		List<BluetoothGattCharacteristic> characteristics = characteristics(address, serviceUUID);
 		if (characteristics == null) {
 			errcodeCallBack(moduleContext, 3);
 		} else {
@@ -180,21 +183,15 @@ public class BroadcomBle implements IBle {
 	}
 
 	@Override
-	public void discoverDescriptorsForCharacteristic(
-			UZModuleContext moduleContext, String address, String serviceUUID,
-			String characteristicUUID) {
-		List<BluetoothGattCharacteristic> characteristics = characteristics(
-				address, serviceUUID);
+	public void discoverDescriptorsForCharacteristic(UZModuleContext moduleContext, String address, String serviceUUID, String characteristicUUID) {
+		List<BluetoothGattCharacteristic> characteristics = characteristics(address, serviceUUID);
 		if (characteristics == null) {
 			errcodeCallBack(moduleContext, 5);
 		} else {
 			for (BluetoothGattCharacteristic characteristic : characteristics) {
-				if (characteristic.getUuid().toString()
-						.equals(characteristicUUID)) {
-					List<BluetoothGattDescriptor> descriptors = characteristic
-							.getDescriptors();
-					descriptorsCallBack(moduleContext, descriptors,
-							serviceUUID, characteristicUUID);
+				if (characteristic.getUuid().toString().equals(characteristicUUID)) {
+					List<BluetoothGattDescriptor> descriptors = characteristic.getDescriptors();
+					descriptorsCallBack(moduleContext, descriptors, serviceUUID, characteristicUUID);
 					return;
 				}
 			}
@@ -203,22 +200,19 @@ public class BroadcomBle implements IBle {
 	}
 
 	@Override
-	public void setNotify(UZModuleContext moduleContext, String address,
-			String serviceUUID, String characteristicUUID) {
+	public void setNotify(UZModuleContext moduleContext, String address, String serviceUUID, String characteristicUUID) {
 		mNotifyCallBackMap.put(characteristicUUID, moduleContext);
 		BluetoothDevice device = mBluetoothAdapter.getRemoteDevice(address);
 		if (device == null) {
 			errcodeCallBack(moduleContext, 6);
 			return;
 		}
-		BluetoothGattService service = mBluetoothGatt.getService(device,
-				UUID.fromString(serviceUUID));
+		BluetoothGattService service = mBluetoothGatt.getService(device, UUID.fromString(serviceUUID));
 		if (service == null) {
 			errcodeCallBack(moduleContext, 5);
 			return;
 		}
-		BluetoothGattCharacteristic characteristic = service
-				.getCharacteristic(UUID.fromString(characteristicUUID));
+		BluetoothGattCharacteristic characteristic = service.getCharacteristic(UUID.fromString(characteristicUUID));
 		if (characteristic == null) {
 			errcodeCallBack(moduleContext, 4);
 			return;
@@ -227,8 +221,7 @@ public class BroadcomBle implements IBle {
 			errcodeCallBack(moduleContext, -1);
 			return;
 		}
-		BluetoothGattDescriptor descriptor = characteristic
-				.getDescriptor(DESC_CCC);
+		BluetoothGattDescriptor descriptor = characteristic.getDescriptor(DESC_CCC);
 		if (descriptor == null) {
 			return;
 		}
@@ -241,16 +234,11 @@ public class BroadcomBle implements IBle {
 	private BluetoothGattCharacteristic mCharacteristic;
 
 	@Override
-	public void readValueForCharacteristic(UZModuleContext moduleContext,
-			String address, String serviceUUID, String characteristicUUID) {
+	public void readValueForCharacteristic(UZModuleContext moduleContext, String address, String serviceUUID, String characteristicUUID) {
 		mReadCharacteristicCallBackMap.put(characteristicUUID, moduleContext);
-		if (mAdress != null && mServiceUUID != null
-				&& mCharacteristicUUID != null && mAdress.equals(address)
-				&& mServiceUUID.equals(serviceUUID)
-				&& mCharacteristicUUID.equals(characteristicUUID)) {
+		if (mAdress != null && mServiceUUID != null && mCharacteristicUUID != null && mAdress.equals(address) && mServiceUUID.equals(serviceUUID) && mCharacteristicUUID.equals(characteristicUUID)) {
 			if (mCharacteristic != null && mBluetoothGatt != null) {
-				boolean status = mBluetoothGatt
-						.readCharacteristic(mCharacteristic);
+				boolean status = mBluetoothGatt.readCharacteristic(mCharacteristic);
 				if (!status) {
 					errcodeCallBack(moduleContext, -1);
 				}
@@ -260,12 +248,10 @@ public class BroadcomBle implements IBle {
 			mServiceUUID = serviceUUID;
 			mCharacteristicUUID = characteristicUUID;
 			if (mBluetoothGatt != null) {
-				BluetoothGattCharacteristic characteristic = characteristic(
-						moduleContext, address, serviceUUID, characteristicUUID);
+				BluetoothGattCharacteristic characteristic = characteristic(moduleContext, address, serviceUUID, characteristicUUID);
 				mCharacteristic = characteristic;
 				if (characteristic != null) {
-					boolean status = mBluetoothGatt
-							.readCharacteristic(characteristic);
+					boolean status = mBluetoothGatt.readCharacteristic(characteristic);
 					if (!status) {
 						errcodeCallBack(moduleContext, -1);
 					}
@@ -275,12 +261,9 @@ public class BroadcomBle implements IBle {
 	}
 
 	@Override
-	public void readValueForDescriptor(UZModuleContext moduleContext,
-			String address, String serviceUUID, String characteristicUUID,
-			String descriptorUUID) {
+	public void readValueForDescriptor(UZModuleContext moduleContext, String address, String serviceUUID, String characteristicUUID, String descriptorUUID) {
 		mReadDescriptorCallBackMap.put(descriptorUUID, moduleContext);
-		BluetoothGattDescriptor descriptor = descriptor(moduleContext, address,
-				serviceUUID, characteristicUUID, descriptorUUID);
+		BluetoothGattDescriptor descriptor = descriptor(moduleContext, address, serviceUUID, characteristicUUID, descriptorUUID);
 		if (mBluetoothGatt != null) {
 			if (descriptor != null) {
 				if (!mBluetoothGatt.readDescriptor(descriptor)) {
@@ -293,18 +276,13 @@ public class BroadcomBle implements IBle {
 	}
 
 	@Override
-	public void writeValueForCharacteristic(UZModuleContext moduleContext,
-			String address, String serviceUUID, String characteristicUUID,
-			String value, int writeType) {
+	public void writeValueForCharacteristic(UZModuleContext moduleContext, String address, String serviceUUID, String characteristicUUID, String value, int writeType) {
 		mWriteCharacteristicCallBackMap.put(characteristicUUID, moduleContext);
 		if (mBluetoothGatt != null) {
-			BluetoothGattCharacteristic characteristic = characteristicWrite(
-					moduleContext, address, serviceUUID, characteristicUUID,
-					writeType);
+			BluetoothGattCharacteristic characteristic = characteristicWrite(moduleContext, address, serviceUUID, characteristicUUID, writeType);
 			if (characteristic != null) {
 				characteristic.setValue(value(value));
-				boolean status = mBluetoothGatt
-						.writeCharacteristic(characteristic);
+				boolean status = mBluetoothGatt.writeCharacteristic(characteristic);
 				if (!status) {
 					errcodeCallBack(moduleContext, -1);
 				}
@@ -316,23 +294,18 @@ public class BroadcomBle implements IBle {
 		byte[] value = new byte[valueStr.length() / 2];
 		for (int i = 0; i < value.length; i++) {
 			if (2 * i + 1 < valueStr.length()) {
-				value[i] = Integer.valueOf(
-						valueStr.substring(2 * i, 2 * i + 2), 16).byteValue();
+				value[i] = Integer.valueOf(valueStr.substring(2 * i, 2 * i + 2), 16).byteValue();
 			} else {
-				value[i] = Integer.valueOf(
-						String.valueOf(valueStr.charAt(2 * i)), 16).byteValue();
+				value[i] = Integer.valueOf(String.valueOf(valueStr.charAt(2 * i)), 16).byteValue();
 			}
 		}
 		return value;
 	}
 
 	@Override
-	public void writeValueForDescriptor(UZModuleContext moduleContext,
-			String address, String serviceUUID, String characteristicUUID,
-			String descriptorUUID, String value) {
+	public void writeValueForDescriptor(UZModuleContext moduleContext, String address, String serviceUUID, String characteristicUUID, String descriptorUUID, String value) {
 		mWriteDescriptorCallBackMap.put(descriptorUUID, moduleContext);
-		BluetoothGattDescriptor descriptor = descriptorWrite(moduleContext,
-				address, serviceUUID, characteristicUUID, descriptorUUID);
+		BluetoothGattDescriptor descriptor = descriptorWrite(moduleContext, address, serviceUUID, characteristicUUID, descriptorUUID);
 		if (mBluetoothGatt != null) {
 			if (descriptor != null) {
 				descriptor.setValue(value(value));
@@ -364,47 +337,36 @@ public class BroadcomBle implements IBle {
 	private final BluetoothGattCallback mGattCallbacks = new BluetoothGattCallback() {
 
 		@Override
-		public void onCharacteristicChanged(
-				BluetoothGattCharacteristic characteristic) {
-			if (mSimpleNotifyCallBackMap.containsKey(characteristic.getUuid()
-					.toString())) {
-				onSimpleCharacteristic(mSimpleNotifyCallBackMap,
-						characteristic, true);
+		public void onCharacteristicChanged(BluetoothGattCharacteristic characteristic) {
+			if (mSimpleNotifyCallBackMap.containsKey(characteristic.getUuid().toString())) {
+				onSimpleCharacteristic(mSimpleNotifyCallBackMap, characteristic, true);
 			} else {
 				onCharacteristic(mNotifyCallBackMap, characteristic, false);
 			}
 		}
 
 		@Override
-		public void onCharacteristicRead(
-				BluetoothGattCharacteristic characteristic, int arg1) {
-			onCharacteristic(mReadCharacteristicCallBackMap, characteristic,
-					false);
+		public void onCharacteristicRead(BluetoothGattCharacteristic characteristic, int arg1) {
+			onCharacteristic(mReadCharacteristicCallBackMap, characteristic, false);
 		}
 
 		@Override
-		public void onCharacteristicWrite(
-				BluetoothGattCharacteristic characteristic, int arg1) {
-			onCharacteristic(mWriteCharacteristicCallBackMap, characteristic,
-					false);
+		public void onCharacteristicWrite(BluetoothGattCharacteristic characteristic, int arg1) {
+			onCharacteristic(mWriteCharacteristicCallBackMap, characteristic, false);
 		}
 
 		@Override
-		public void onConnectionStateChange(BluetoothDevice device, int status,
-				int newState) {
+		public void onConnectionStateChange(BluetoothDevice device, int status, int newState) {
 			String address = device.getAddress();
 			if (mConnectsCallBackMap.containsKey(address)) {
 				if (status != BluetoothGatt.GATT_SUCCESS) {
-					connectsCallBack(mConnectsCallBackMap.get(address), false,
-							-1, address);
+					connectsCallBack(mConnectsCallBackMap.get(address), false, -1, address);
 					return;
 				}
 				if (newState == BluetoothProfile.STATE_CONNECTED) {
-					connectsCallBack(mConnectsCallBackMap.get(address), true,
-							0, address);
+					connectsCallBack(mConnectsCallBackMap.get(address), true, 0, address);
 				} else {
-					connectsCallBack(mConnectsCallBackMap.get(address), false,
-							-1, address);
+					connectsCallBack(mConnectsCallBackMap.get(address), false, -1, address);
 				}
 				return;
 			}
@@ -422,40 +384,33 @@ public class BroadcomBle implements IBle {
 		}
 
 		@Override
-		public void onDescriptorRead(BluetoothGattDescriptor descriptor,
-				int arg1) {
+		public void onDescriptorRead(BluetoothGattDescriptor descriptor, int arg1) {
 			onDescript(mReadDescriptorCallBackMap, descriptor);
 		}
 
 		@Override
-		public void onDescriptorWrite(BluetoothGattDescriptor descriptor,
-				int arg1) {
+		public void onDescriptorWrite(BluetoothGattDescriptor descriptor, int arg1) {
 			onDescript(mWriteDescriptorCallBackMap, descriptor);
 		}
 
 		@Override
 		public void onScanResult(BluetoothDevice device, int rssi, byte[] arg2) {
 			String strScanRecord = new String(Hex.encodeHex(arg2));
-			mScanBluetoothDeviceMap.put(device.getAddress(), new BleDeviceInfo(
-					device, rssi,strScanRecord));
+			mScanBluetoothDeviceMap.put(device.getAddress(), new BleDeviceInfo(device, rssi, strScanRecord));
 		}
 
 		@Override
 		public void onServicesDiscovered(BluetoothDevice device, int status) {
 			if (status == BluetoothGatt.GATT_SUCCESS) {
 				String address = device.getAddress();
-				List<BluetoothGattService> service = mBluetoothGatt
-						.getServices(device);
+				List<BluetoothGattService> service = mBluetoothGatt.getServices(device);
 				mServiceMap.put(address, service);
-				discoverServiceCallBack(
-						mDiscoverServiceCallBackMap.get(address), service,
-						true, 0);
+				discoverServiceCallBack(mDiscoverServiceCallBackMap.get(address), service, true, 0);
 			}
 		}
 	};
 
-	private void connectCallBack(UZModuleContext moduleContext, boolean status,
-			int errCode) {
+	private void connectCallBack(UZModuleContext moduleContext, boolean status, int errCode) {
 		JSONObject ret = new JSONObject();
 		JSONObject err = new JSONObject();
 		try {
@@ -471,8 +426,7 @@ public class BroadcomBle implements IBle {
 		}
 	}
 
-	private void connectsCallBack(UZModuleContext moduleContext,
-			boolean status, int errCode, String uuid) {
+	private void connectsCallBack(UZModuleContext moduleContext, boolean status, int errCode, String uuid) {
 		JSONObject ret = new JSONObject();
 		JSONObject err = new JSONObject();
 		try {
@@ -489,8 +443,7 @@ public class BroadcomBle implements IBle {
 		}
 	}
 
-	private void disconnectCallBack(UZModuleContext moduleContext,
-			boolean status, String uuid) {
+	private void disconnectCallBack(UZModuleContext moduleContext, boolean status, String uuid) {
 		JSONObject ret = new JSONObject();
 		try {
 			ret.put("status", status);
@@ -501,8 +454,7 @@ public class BroadcomBle implements IBle {
 		}
 	}
 
-	private void discoverServiceCallBack(UZModuleContext moduleContext,
-			List<BluetoothGattService> services, boolean status, int errCode) {
+	private void discoverServiceCallBack(UZModuleContext moduleContext, List<BluetoothGattService> services, boolean status, int errCode) {
 		JSONObject ret = new JSONObject();
 		JSONObject err = new JSONObject();
 		try {
@@ -523,8 +475,7 @@ public class BroadcomBle implements IBle {
 		}
 	}
 
-	private List<BluetoothGattCharacteristic> characteristics(String address,
-			String serviceUUID) {
+	private List<BluetoothGattCharacteristic> characteristics(String address, String serviceUUID) {
 		List<BluetoothGattService> services = mServiceMap.get(address);
 		if (services != null) {
 			for (BluetoothGattService service : services) {
@@ -548,8 +499,7 @@ public class BroadcomBle implements IBle {
 		}
 	}
 
-	private void characteristicCallBack(UZModuleContext moduleContext,
-			List<BluetoothGattCharacteristic> characteristics) {
+	private void characteristicCallBack(UZModuleContext moduleContext, List<BluetoothGattCharacteristic> characteristics) {
 		JSONObject ret = new JSONObject();
 		JSONArray characteristicsJson = new JSONArray();
 		try {
@@ -558,12 +508,9 @@ public class BroadcomBle implements IBle {
 			for (BluetoothGattCharacteristic characteristic : characteristics) {
 				JSONObject item = new JSONObject();
 				item.put("uuid", characteristic.getUuid());
-				item.put("serviceUUID", characteristic.getService().getUuid()
-						.toString());
-				item.put("permissions",
-						permissions(characteristic.getPermissions()));
-				item.put("propertie",
-						properties(characteristic.getProperties()));
+				item.put("serviceUUID", characteristic.getService().getUuid().toString());
+				item.put("permissions", permissions(characteristic.getPermissions()));
+				item.put("propertie", properties(characteristic.getProperties()));
 				characteristicsJson.put(item);
 			}
 			moduleContext.success(ret, false);
@@ -608,9 +555,7 @@ public class BroadcomBle implements IBle {
 		return String.valueOf(propertie);
 	}
 
-	private void descriptorsCallBack(UZModuleContext moduleContext,
-			List<BluetoothGattDescriptor> descriptors, String serviceUUID,
-			String characteristicUUID) {
+	private void descriptorsCallBack(UZModuleContext moduleContext, List<BluetoothGattDescriptor> descriptors, String serviceUUID, String characteristicUUID) {
 		JSONObject ret = new JSONObject();
 		JSONArray descriptorsJson = new JSONArray();
 		try {
@@ -629,25 +574,20 @@ public class BroadcomBle implements IBle {
 		}
 	}
 
-	private void onSimpleCharacteristic(Map<String, Ble> map,
-			BluetoothGattCharacteristic characteristic, boolean isSimple) {
-		UZModuleContext moduleContext = map.get(
-				characteristic.getUuid().toString()).getModuleContext();
+	private void onSimpleCharacteristic(Map<String, Ble> map, BluetoothGattCharacteristic characteristic, boolean isSimple) {
+		UZModuleContext moduleContext = map.get(characteristic.getUuid().toString()).getModuleContext();
 		characteristicSimpleCallBack(moduleContext, characteristic);
 	}
 
-	private void onCharacteristic(Map<String, UZModuleContext> map,
-			BluetoothGattCharacteristic characteristic, boolean isSimple) {
-		UZModuleContext moduleContext = map.get(characteristic.getUuid()
-				.toString());
+	private void onCharacteristic(Map<String, UZModuleContext> map, BluetoothGattCharacteristic characteristic, boolean isSimple) {
+		UZModuleContext moduleContext = map.get(characteristic.getUuid().toString());
 		if (moduleContext != null)
 			characteristicCallBack(moduleContext, characteristic);
 		else
 			characteristicSimpleCallBack(moduleContext, characteristic);
 	}
 
-	private void characteristicSimpleCallBack(UZModuleContext moduleContext,
-			BluetoothGattCharacteristic characteristic) {
+	private void characteristicSimpleCallBack(UZModuleContext moduleContext, BluetoothGattCharacteristic characteristic) {
 		JSONObject ret = new JSONObject();
 		try {
 			ret.put("status", true);
@@ -659,67 +599,52 @@ public class BroadcomBle implements IBle {
 	}
 
 	private void setNotifyData(BluetoothGattCharacteristic characteristic) {
-		Ble ble = mSimpleNotifyCallBackMap.get(characteristic.getUuid()
-				.toString());
+		Ble ble = mSimpleNotifyCallBackMap.get(characteristic.getUuid().toString());
 		if (ble != null) {
 			if (mNotifyData.isNull(ble.getPeripheralUUID())) {
 				JSONObject notifyData = new JSONObject();
 				try {
 					notifyData.put("serviceUUID", ble.getServiceId());
-					notifyData
-							.put("characterUUID", ble.getCharacteristicUUID());
+					notifyData.put("characterUUID", ble.getCharacteristicUUID());
 					JSONArray data = new JSONArray();
-					data.put(new String(
-							Hex.encodeHex(characteristic.getValue())));
+					data.put(new String(Hex.encodeHex(characteristic.getValue())));
 					notifyData.put("data", data);
 					mNotifyData.put(ble.getPeripheralUUID(), notifyData);
 				} catch (JSONException e) {
 					e.printStackTrace();
 				}
 			} else {
-				JSONObject notifyData = mNotifyData.optJSONObject(ble
-						.getPeripheralUUID());
+				JSONObject notifyData = mNotifyData.optJSONObject(ble.getPeripheralUUID());
 				JSONArray data = notifyData.optJSONArray("data");
 				data.put(new String(Hex.encodeHex(characteristic.getValue())));
 			}
 		}
 	}
 
-	private void characteristicCallBack(UZModuleContext moduleContext,
-			BluetoothGattCharacteristic characteristic) {
+	private void characteristicCallBack(UZModuleContext moduleContext, BluetoothGattCharacteristic characteristic) {
 		JSONObject ret = new JSONObject();
 		JSONObject characteristicJson = new JSONObject();
 		try {
 			ret.put("status", true);
 			ret.put("characteristic", characteristicJson);
 			characteristicJson.put("uuid", characteristic.getUuid());
-			characteristicJson.put("serviceUUID", characteristic.getService()
-					.getUuid().toString());
-			characteristicJson.put("permissions",
-					permissions(characteristic.getPermissions()));
-			characteristicJson.put("propertie",
-					properties(characteristic.getProperties()));
-			characteristicJson.put("value",
-					new String(Hex.encodeHex(characteristic.getValue())));
+			characteristicJson.put("serviceUUID", characteristic.getService().getUuid().toString());
+			characteristicJson.put("permissions", permissions(characteristic.getPermissions()));
+			characteristicJson.put("propertie", properties(characteristic.getProperties()));
+			characteristicJson.put("value", new String(Hex.encodeHex(characteristic.getValue())));
 			moduleContext.success(ret, false);
 		} catch (JSONException e) {
 			e.printStackTrace();
 		}
 	}
 
-	private void onDescript(Map<String, UZModuleContext> map,
-			BluetoothGattDescriptor descriptor) {
-		UZModuleContext moduleContext = map
-				.get(descriptor.getUuid().toString());
+	private void onDescript(Map<String, UZModuleContext> map, BluetoothGattDescriptor descriptor) {
+		UZModuleContext moduleContext = map.get(descriptor.getUuid().toString());
 		if (moduleContext != null)
-			descriptorCallBack(moduleContext, descriptor, descriptor
-					.getCharacteristic().getService().getUuid().toString(),
-					descriptor.getCharacteristic().getUuid().toString());
+			descriptorCallBack(moduleContext, descriptor, descriptor.getCharacteristic().getService().getUuid().toString(), descriptor.getCharacteristic().getUuid().toString());
 	}
 
-	private void descriptorCallBack(UZModuleContext moduleContext,
-			BluetoothGattDescriptor descriptor, String serviceUUID,
-			String characteristicUUID) {
+	private void descriptorCallBack(UZModuleContext moduleContext, BluetoothGattDescriptor descriptor, String serviceUUID, String characteristicUUID) {
 		JSONObject ret = new JSONObject();
 		JSONObject descriptorJson = new JSONObject();
 		try {
@@ -728,27 +653,22 @@ public class BroadcomBle implements IBle {
 			descriptorJson.put("uuid", descriptor.getUuid());
 			descriptorJson.put("serviceUUID", serviceUUID);
 			descriptorJson.put("characteristicUUID", characteristicUUID);
-			descriptorJson.put("value",
-					new String(Hex.encodeHex(descriptor.getValue())));
+			descriptorJson.put("value", new String(Hex.encodeHex(descriptor.getValue())));
 			moduleContext.success(ret, false);
 		} catch (JSONException e) {
 			e.printStackTrace();
 		}
 	}
 
-	private BluetoothGattCharacteristic characteristic(
-			UZModuleContext moduleContext, String address, String serviceUUID,
-			String characteristicUUID) {
+	private BluetoothGattCharacteristic characteristic(UZModuleContext moduleContext, String address, String serviceUUID, String characteristicUUID) {
 		List<BluetoothGattService> services = mServiceMap.get(address);
 		if (services != null) {
 			for (BluetoothGattService service : services) {
 				if (service.getUuid().toString().equals(serviceUUID)) {
-					List<BluetoothGattCharacteristic> characteristics = service
-							.getCharacteristics();
+					List<BluetoothGattCharacteristic> characteristics = service.getCharacteristics();
 					if (characteristics != null) {
 						for (BluetoothGattCharacteristic characteristic : characteristics) {
-							if (characteristic.getUuid().toString()
-									.equals(characteristicUUID)) {
+							if (characteristic.getUuid().toString().equals(characteristicUUID)) {
 								return characteristic;
 							}
 						}
@@ -766,19 +686,15 @@ public class BroadcomBle implements IBle {
 		return null;
 	}
 
-	private BluetoothGattCharacteristic characteristicWrite(
-			UZModuleContext moduleContext, String address, String serviceUUID,
-			String characteristicUUID, int writeType) {
+	private BluetoothGattCharacteristic characteristicWrite(UZModuleContext moduleContext, String address, String serviceUUID, String characteristicUUID, int writeType) {
 		List<BluetoothGattService> services = mServiceMap.get(address);
 		if (services != null) {
 			for (BluetoothGattService service : services) {
 				if (service.getUuid().toString().equals(serviceUUID)) {
-					List<BluetoothGattCharacteristic> characteristics = service
-							.getCharacteristics();
+					List<BluetoothGattCharacteristic> characteristics = service.getCharacteristics();
 					if (characteristics != null) {
 						for (BluetoothGattCharacteristic characteristic : characteristics) {
-							if (characteristic.getUuid().toString()
-									.equals(characteristicUUID)) {
+							if (characteristic.getUuid().toString().equals(characteristicUUID)) {
 								characteristic.setWriteType(writeType);
 								return characteristic;
 							}
@@ -797,21 +713,16 @@ public class BroadcomBle implements IBle {
 		return null;
 	}
 
-	private BluetoothGattDescriptor descriptor(UZModuleContext moduleContext,
-			String address, String serviceUUID, String characteristicUUID,
-			String descriptorUUID) {
+	private BluetoothGattDescriptor descriptor(UZModuleContext moduleContext, String address, String serviceUUID, String characteristicUUID, String descriptorUUID) {
 		List<BluetoothGattService> services = mServiceMap.get(address);
 		if (services != null) {
 			for (BluetoothGattService service : services) {
 				if (service.getUuid().toString().equals(serviceUUID)) {
-					List<BluetoothGattCharacteristic> characteristics = service
-							.getCharacteristics();
+					List<BluetoothGattCharacteristic> characteristics = service.getCharacteristics();
 					if (characteristics != null) {
 						for (BluetoothGattCharacteristic characteristic : characteristics) {
-							if (characteristic.getUuid().toString()
-									.equals(characteristicUUID)) {
-								return characteristic.getDescriptor(UUID
-										.fromString(descriptorUUID));
+							if (characteristic.getUuid().toString().equals(characteristicUUID)) {
+								return characteristic.getDescriptor(UUID.fromString(descriptorUUID));
 							}
 						}
 						errcodeCallBack(moduleContext, 6);
@@ -828,21 +739,16 @@ public class BroadcomBle implements IBle {
 		return null;
 	}
 
-	private BluetoothGattDescriptor descriptorWrite(
-			UZModuleContext moduleContext, String address, String serviceUUID,
-			String characteristicUUID, String descriptorUUID) {
+	private BluetoothGattDescriptor descriptorWrite(UZModuleContext moduleContext, String address, String serviceUUID, String characteristicUUID, String descriptorUUID) {
 		List<BluetoothGattService> services = mServiceMap.get(address);
 		if (services != null) {
 			for (BluetoothGattService service : services) {
 				if (service.getUuid().toString().equals(serviceUUID)) {
-					List<BluetoothGattCharacteristic> characteristics = service
-							.getCharacteristics();
+					List<BluetoothGattCharacteristic> characteristics = service.getCharacteristics();
 					if (characteristics != null) {
 						for (BluetoothGattCharacteristic characteristic : characteristics) {
-							if (characteristic.getUuid().toString()
-									.equals(characteristicUUID)) {
-								return characteristic.getDescriptor(UUID
-										.fromString(descriptorUUID));
+							if (characteristic.getUuid().toString().equals(characteristicUUID)) {
+								return characteristic.getDescriptor(UUID.fromString(descriptorUUID));
 							}
 						}
 						errcodeCallBack(moduleContext, 7);
@@ -860,23 +766,19 @@ public class BroadcomBle implements IBle {
 	}
 
 	@Override
-	public void setSimpleNotify(UZModuleContext moduleContext, String address,
-			String serviceUUID, String characteristicUUID) {
-		mSimpleNotifyCallBackMap.put(characteristicUUID, new Ble(address,
-				serviceUUID, characteristicUUID, moduleContext));
+	public void setSimpleNotify(UZModuleContext moduleContext, String address, String serviceUUID, String characteristicUUID) {
+		mSimpleNotifyCallBackMap.put(characteristicUUID, new Ble(address, serviceUUID, characteristicUUID, moduleContext));
 		BluetoothDevice device = mBluetoothAdapter.getRemoteDevice(address);
 		if (device == null) {
 			errcodeCallBack(moduleContext, 6);
 			return;
 		}
-		BluetoothGattService service = mBluetoothGatt.getService(device,
-				UUID.fromString(serviceUUID));
+		BluetoothGattService service = mBluetoothGatt.getService(device, UUID.fromString(serviceUUID));
 		if (service == null) {
 			errcodeCallBack(moduleContext, 5);
 			return;
 		}
-		BluetoothGattCharacteristic characteristic = service
-				.getCharacteristic(UUID.fromString(characteristicUUID));
+		BluetoothGattCharacteristic characteristic = service.getCharacteristic(UUID.fromString(characteristicUUID));
 		if (characteristic == null) {
 			errcodeCallBack(moduleContext, 4);
 			return;
@@ -885,8 +787,7 @@ public class BroadcomBle implements IBle {
 			errcodeCallBack(moduleContext, -1);
 			return;
 		}
-		BluetoothGattDescriptor descriptor = characteristic
-				.getDescriptor(DESC_CCC);
+		BluetoothGattDescriptor descriptor = characteristic.getDescriptor(DESC_CCC);
 		if (descriptor == null) {
 			return;
 		}
@@ -902,4 +803,5 @@ public class BroadcomBle implements IBle {
 	public void clearAllSimpleNotifyData() {
 		mNotifyData = new JSONObject();
 	}
+
 }

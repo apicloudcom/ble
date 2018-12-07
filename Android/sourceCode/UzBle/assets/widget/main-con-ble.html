@@ -14,20 +14,21 @@
     	}
     	body{
     		background-color:#fff;
-    		
     	}
     </style>
-		
     </head>
     <body>
     </body>
     <script type='text/javascript'>
+    
+    //var globalUUID = '66:02:89:82:3E:25';
+    var globalUUID = 'CF:FD:C5:28:20:26';
     var addrs = null;
     //初始化
     function initBle(){
 	     var ble = api.require('ble');
 		ble.initManager({
-		  single:false,
+		  single:true,
 		},function( ret ){
 		   api.alert( {msg:JSON.stringify( ret )});
 		});
@@ -37,6 +38,7 @@
 	     var ble = api.require('ble');
 		ble.scan({
 		   //serviceUUIDs:['00001800-0000-1000-8000-00805f9b34fb']
+		   clean:true,
 		}, function( ret ){
 		    if( ret.status ){
 		        alert( '扫描成功' );
@@ -45,13 +47,7 @@
 		    }
 		});
     }
-     //获取扫描的数据;
-    function getBlesInfo(){
-	     var ble = api.require('ble');
-		ble.getPeripheral(function( ret ){
-		   api.alert( {msg:JSON.stringify( ret )});
-		});
-    }
+
     //扫描状态;
     function isScanning(){
 	     var ble = api.require('ble');
@@ -66,34 +62,56 @@
 		   api.alert( {msg:JSON.stringify( ret )});
 		});
     }
+    
+    
+    
+    
+        //停止扫描;
+    function clean(){
+	     var ble = api.require('ble');
+		ble.clean();
+    }
+    function getPeripheral(){
+    	 var ble = api.require('ble');
+		ble.getPeripheral({
+		},function( ret,err ){
+		   		api.alert( {msg:'getPeripheral : ' + JSON.stringify(ret)});
+		});
+    
+    
+    
+    }
+    
     //测试连接；
     function connect(){
-	     var ble = api.require('ble');
+	    var ble = api.require('ble');
 		ble.connect({
-			peripheralUUID:'CF:FD:C5:28:20:26',		
+			peripheralUUID: globalUUID,		
 		},function( ret,err ){
-		   if(ret.status){
-		   	api.alert( {msg:JSON.stringify( ret )});
-		   //	discoverService();
-		   }
-		   
+			api.alert( {msg:'connect : ' + JSON.stringify(ret)});
 		});
     }
     //断开连接;
     function disconnect(){
-	     var ble = api.require('ble');
+    
+	    var ble = api.require('ble');
 		ble.disconnect({
-			peripheralUUID:'CF:FD:C5:28:20:26',		
+			peripheralUUID:globalUUID,		
 		},function( ret){
-		   api.alert( {msg:JSON.stringify( ret )});
+			ble.isConnected({
+			 	peripheralUUID:globalUUID
+			},function( ret){
+		   		api.alert( {msg:'isConnect : ' + JSON.stringify( ret )});
+			})
 		});
+		
     }
    
   	//连接状态;
     function isConnectedxxxx(){
 	     var ble = api.require('ble');
 		ble.isConnected({
-			 peripheralUUID:'CF:FD:C5:28:20:26'
+			 peripheralUUID:globalUUID
 		},function( ret){
 		   api.alert( {msg:JSON.stringify( ret )});
 		});
@@ -102,19 +120,23 @@
     function discoverService(){
 	     var ble = api.require('ble');
 		ble.discoverService({
-			peripheralUUID:'CF:FD:C5:28:20:26'		
+			peripheralUUID:globalUUID		
 		},function( ret,err){
 		  api.alert( {msg:JSON.stringify( ret )});
+		  console.log(JSON.stringify(ret));
 		});
     }
     //根据指定的外围设备 UUID 及其服务 UUID 获取该外围设备的所有特征（Characteristic）
     function discoverCharacteristics(){
 	     var ble = api.require('ble');
 		ble.discoverCharacteristics({
-			peripheralUUID:'CF:FD:C5:28:20:26',		
-			serviceUUID:'00001800-0000-1000-8000-00805f9b34fb'
+			peripheralUUID:globalUUID,		
+			serviceUUID:'0000ffb0-0000-1000-8000-00805f9b34fb'
 		},function( ret,err){
-		   api.alert( {msg:JSON.stringify( ret )});
+		console.log(JSON.stringify(ret));
+		 // writeValueForCharacteristic();
+		 api.alert( {msg:JSON.stringify( ret )});
+		   console.log(JSON.stringify(ret));
 		});
     }  
     
@@ -122,17 +144,64 @@
 	     var ble = api.require('ble');
 		ble.writeValueForCharacteristic({
 			//value:'617975303064',
-			value:'415955303044',
+			//唤醒设备
+			value:'acfffe150100cce0',
 			//value:'AYU00D',
-			
-			peripheralUUID:'CF:FD:C5:28:20:26',
-			serviceUUID:'00001800-0000-1000-8000-00805f9b34fb',
-			characteristicUUID:'00002a04-0000-1000-8000-00805f9b34fb'
+			writeType:'withoutResponse',
+			peripheralUUID: globalUUID,
+			serviceUUID:'0000ffb0-0000-1000-8000-00805f9b34fb',
+			characteristicUUID:'0000ffb1-0000-1000-8000-00805f9b34fb'
+		},function( ret,err){
+		  // api.alert( {msg:JSON.stringify( ret )});
+		   //writeValueForCharacteristic1();
+		});
+    }
+    
+         function writeValueForCharacteristic1(){
+	     var ble = api.require('ble');
+		ble.writeValueForCharacteristic({
+			//value:'617975303064',
+			value:'ab081400000000c7',
+			//value:'AYU00D',
+			writeType:'withoutResponse',
+			peripheralUUID: globalUUID,
+			serviceUUID:'0000ffb0-0000-1000-8000-00805f9b34fb',
+			characteristicUUID:'0000ffb1-0000-1000-8000-00805f9b34fb'
+		},function( ret,err){
+		   //api.alert( {msg:JSON.stringify( ret )});
+		});
+    }
+    
+    
+    
+       function writeValueForCharacteristic2(){
+	     var ble = api.require('ble');
+		ble.writeValueForCharacteristic({
+			//value:'617975303064',
+			value:'ab081202000000c6',
+			//value:'AYU00D',
+			writeType:'withoutResponse',
+			peripheralUUID: globalUUID,
+			serviceUUID:'0000ffb0-0000-1000-8000-00805f9b34fb',
+			characteristicUUID:'0000ffb1-0000-1000-8000-00805f9b34fb'
 		},function( ret,err){
 		   api.alert( {msg:JSON.stringify( ret )});
-		   api.alert( {msg:JSON.stringify( err )});
-		   
-		   
+		});
+    }
+    
+    
+           function writeValueForCharacteristic3(){
+	     var ble = api.require('ble');
+		ble.writeValueForCharacteristic({
+			//value:'617975303064',
+			value:'ab081104000000c8',
+			//value:'AYU00D',
+			writeType:'withoutResponse',
+			peripheralUUID: globalUUID,
+			serviceUUID:'0000ffb0-0000-1000-8000-00805f9b34fb',
+			characteristicUUID:'0000ffb1-0000-1000-8000-00805f9b34fb'
+		},function( ret,err){
+		   api.alert( {msg:JSON.stringify( ret )});
 		});
     }
     
@@ -140,7 +209,7 @@
       function readValueForCharacteristic(){
 	     var ble = api.require('ble');
 		ble.readValueForCharacteristic({
-			peripheralUUID:'CF:FD:C5:28:20:26',
+			peripheralUUID:globalUUID,
 			serviceUUID:'00001800-0000-1000-8000-00805f9b34fb',
 			characteristicUUID:'00002a04-0000-1000-8000-00805f9b34fb'
 		},function( ret,err){
@@ -154,7 +223,7 @@
     function discoverDescriptorsForCharacteristic(){
 	     var ble = api.require('ble');
 		ble.discoverDescriptorsForCharacteristic({
-			peripheralUUID:'CF:FD:C5:28:20:26',
+			peripheralUUID:globalUUID,
 			serviceUUID:'00001800-0000-1000-8000-00805f9b34fb',
 			characteristicUUID:'00002a00-0000-1000-8000-00805f9b34fb'
 		},function( ret,err){
@@ -177,7 +246,7 @@
     function readValueForDescriptor(){
 	     var ble = api.require('ble');
 		ble.readValueForDescriptor({
-			peripheralUUID:'CF:FD:C5:28:20:26',
+			peripheralUUID:globalUUID,
 			serviceUUID:'00001800-0000-1000-8000-00805f9b34fb',
 			characteristicUUID:'00002a04-0000-1000-8000-00805f9b34fb',
 			descriptorUUID:'00002900-0000-1000-8000-00805f9b34fb'
@@ -187,49 +256,38 @@
 		});
     }
     
-  
-    
-    
-    
      function notify() {
-            var ble = api.require('ble');
-					for ( i = 0; i < addrs.length; i++) {
-						console.log("setSimpleNotify peripheralUUID:" + addrs[i])
-						ble.setSimpleNotify({
-							peripheralUUID : addrs[i],
-							serviceUUID : '0000fff0-0000-1000-8000-00805f9b34fb',
-							characteristicUUID : '0000fff1-0000-1000-8000-00805f9b34fb'
-						}, function(ret, err) {
-							//console.log(JSON.stringify(ret) + "notify-ret")
-							//console.log(JSON.stringify(err) + "notify-err")
-						});
-					}
-			}
+          var ble = api.require('ble');
+			
+	 }
 
-			function stopNotify() {
-			var ble = api.require('ble');
-				ble.getAllSimpleNotifyData(function(ret) {
-					console.log("获取返回值" + JSON.stringify(ret))
+	function stopNotify() {
+		var ble = api.require('ble');
+		ble.getAllSimpleNotifyData(function(ret) {
+			console.log("获取返回值" + JSON.stringify(ret))
 					//ble.clearAllSimpleNotifyData();
-				});
-			}
-    
+		});
+	}
+			
     </script>
     
    <body>
     <div id="wrap">
         <div id="main">
         	<br>
-             <div class='itemtitle'>1.初始化蓝牙设备</div>
+            <div class='itemtitle'>1.初始化蓝牙设备</div>
 			<div class="clickbtn" tapmode="active" onclick="initBle()" >初始化</div> 
 			<div class='itemtitle'>2.开启扫描设备</div>
 			<div class="clickbtn" tapmode="active" onclick="scan()" >开启扫描scan</div>
 			<div class='itemtitle'>3.获取扫描结果</div>
-			<div class="clickbtn" tapmode="active" onclick="getBlesInfo()" >获取到扫描后的设备数据</div>  
+			<div class="clickbtn" tapmode="active" onclick="getPeripheral()" >获取到扫描后的设备数据</div>  
 			<div class='itemtitle'>4.扫描状态</div>
 			<div class="clickbtn" tapmode="active" onclick="isScanning()" >扫描状态isScanning</div>  
 			<div class='itemtitle'>5.停止扫描</div>
 			<div class="clickbtn" tapmode="active" onclick="stopScan()" >停止扫描stopScan</div>
+			<div class='itemtitle'>clean</div>
+			<div class="clickbtn" tapmode="active" onclick="clean()" >clean</div>
+			
 			<div class='itemtitle'>6.连接</div>
 			<div class="clickbtn" tapmode="active" onclick="connect()" >连接connect</div>    
 			<div class='itemtitle'>7.断开连接</div>
@@ -248,6 +306,17 @@
 			<div class="clickbtn" tapmode="active" onclick="readValueForDescriptor()" >readValueForDescriptor</div> 
 			<div class='itemtitle'>14.writeValueForCharacteristic</div>
 			<div class="clickbtn" tapmode="active" onclick="writeValueForCharacteristic()" >writeValueForCharacteristic</div>
+			<div class='itemtitle'>14.writeValueForCharacteristic1</div>
+			<div class="clickbtn" tapmode="active" onclick="writeValueForCharacteristic1()" >writeValueForCharacteristic1</div>
+			
+			<div class='itemtitle'>14.writeValueForCharacteristic2</div>
+			<div class="clickbtn" tapmode="active" onclick="writeValueForCharacteristic2()" >writeValueForCharacteristic2</div>
+			
+				<div class='itemtitle'>称重模式</div>
+			<div class="clickbtn" tapmode="active" onclick="writeValueForCharacteristic3()" >writeValueForCharacteristic3</div>
+			
+			
+			
 			<div class='itemtitle'>14.notify</div>
 			<div class="clickbtn" tapmode="active" onclick="notify()" >notify</div>
 			<div class='itemtitle'>14.stopNotify</div>
@@ -255,5 +324,5 @@
 		</div>
 	</div>
 </body>
-    
+
 </html>

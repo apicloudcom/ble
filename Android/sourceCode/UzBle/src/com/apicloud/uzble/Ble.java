@@ -1,10 +1,12 @@
 package com.apicloud.uzble;
 
 import com.uzmap.pkg.uzcore.uzmodule.UZModuleContext;
+
 /**
  * ble bean 类；
+ * 
  * @author 邓宝成
- *
+ * 
  */
 public class Ble {
 	private String peripheralUUID;
@@ -12,8 +14,7 @@ public class Ble {
 	private String characteristicUUID;
 	private UZModuleContext moduleContext;
 
-	public Ble(String peripheralUUID, String serviceId,
-			String characteristicUUID, UZModuleContext moduleContext) {
+	public Ble(String peripheralUUID, String serviceId, String characteristicUUID, UZModuleContext moduleContext) {
 		this.peripheralUUID = peripheralUUID;
 		this.serviceId = serviceId;
 		this.characteristicUUID = characteristicUUID;
