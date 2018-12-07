@@ -6,7 +6,12 @@ APICloud 的 ble 模块是一个蓝牙模块。它封装了 iOS 和 android 两�
 
 ## 模块接口文档
 
-<p style="color: #ccc; margin-bottom: 30px;">来自于：APICloud 官方</p>
+/*
+Title: ble
+Description: ble
+*/
+
+<p style="color: #ccc; margin-bottom: 30px;">来自于：APICloud 官方<a style="background-color: #95ba20; color:#fff; padding:4px 8px;border-radius:5px;margin-left:30px; margin-bottom:0px; font-size:12px;text-decoration:none;" target="_blank" href="http://www.apicloud.com/mod_detail/ble">立即使用</a></p>
 
 <ul id="tab" class="clearfix">
 	<li class="active"><a href="#method-content">Method</a></li>
@@ -38,6 +43,7 @@ APICloud 的 ble 模块是一个蓝牙模块。它封装了 iOS 和 android 两�
 [setSimpleNotify](#setSimpleNotify)
 [getAllSimpleNotifyData](#getAllSimpleNotifyData)
 [clearAllSimpleNotifyData](#clearAllSimpleNotifyData)
+[clean](#clean)
 
 </div>
 
@@ -71,17 +77,25 @@ APICloud 的 ble 模块是一个蓝牙模块。它封装了 iOS 和 android 两�
 
 若要支持后台使用蓝牙功能需配置 [config.xml](/APICloud/技术专题/app-config-manual) 文件 [bluetooth-central、bluetooth-peripheral](http://docs.apicloud.com/APICloud/%E6%8A%80%E6%9C%AF%E4%B8%93%E9%A2%98/app-config-manual#14-2) 字段。
 
-***本模块源码已开源，地址为：https://github.com/apicloudcom/ble***
+**不能同时添加的模块：beecloud**
+
 
 # 模块接口
 
-<dive id="initManager"></div>
+<div id="initManager"></div>
 
 # **initManager**
 
 初始化蓝牙4.0管理器
 
 initManager(cllback(ret))
+
+## params
+
+single
+
+- 类型：布尔 true 为单例模式,false为非单例模式;默认为false;
+- 描述：（可选项）则扫描附近的所有支持蓝牙4.0的设备
 
 ## callback(ret)
 
@@ -118,11 +132,13 @@ iOS系统，Android系统
 
 可提供的1.0.0及更高版本
 
+
+
 <div id="scan"></div>
 
 # **scan**
 
-开始搜索蓝牙4.0设备，模块内部会不断的扫描更新附近的蓝牙4.0设备信息，可通过 getPeripheral 接口来获取扫描到的设备信息。若要停止、清空扫描则调用 stopScan 接口
+开始搜索蓝牙4.0设备，模块内部会不断的扫描更新附近的蓝牙4.0设备信息，可通过 getPeripheral 接口来获取扫描到的设备信息。若要停止扫描则调用 stopScan 接口
 
 scan({params}, callback(ret, err))
 
@@ -132,6 +148,12 @@ serviceUUIDs
 
 - 类型：数组
 - 描述：（可选项）要扫描的蓝牙4.0设备的服务（service）的 UUID（字符串） 组成的数组，若不传则扫描附近的所有支持蓝牙4.0的设备
+
+clean
+
+- 类型：布尔
+- 描述：（可选项）扫描前是否清空已搜索到的记录在本地的外围设备信息
+- 默认：true
 
 ## callback(ret)
 
@@ -184,9 +206,10 @@ ret：
 ```js
 {
     peripherals:[{ //数组类型；获取到的当前扫描到的蓝牙4.0设备
+      manufacturerData:'',  //字符串类型；蓝牙广播的数据；
       uuid: '',    //字符串类型；扫描到的蓝牙设备的 UUID
       name: '',    //字符串类型；扫描到的蓝牙设备的名字
-      rssi:        //数字类型；扫描到的蓝牙设备的信号强度
+      rssi:        //数字类型；扫描到的蓝牙设备的信号强度，在 iOS 平台上已 deprecated，可通过 getPeripheralRssi 接口获取
     },...]
 }
 ```
@@ -215,9 +238,15 @@ iOS系统，Android系统
 
 获取当前扫描到的所有外围设备的 rssi
 
-注意：
+**注意：**
 
-本接口仅支持iOS平台，且仅在 iOS8（含）以上系统上使用。iOS7以下系统可在Peripheral的返回信息里获得。
+- 本接口仅支持iOS平台，且仅在 iOS8（含）以上系统上使用。iOS7以下系统可在 Peripheral 的返回信息里获得。
+- 通过本接口获取 rssi 必须先建立连接，苹果的官方文档说明如下：
+
+```js
+While connected, retrieves the current RSSI of the link.
+```
+
 
 getPeripheralRssi({params},callback(ret, err))
 
@@ -271,7 +300,7 @@ ble.getPeripheralRssi(function(ret) {
 
 ## 可用性
 
-iOS系统，Android系统
+iOS系统
 
 可提供的1.0.0及更高版本
 
@@ -318,7 +347,7 @@ iOS系统，Android系统
 
 # **stopScan**
 
-停止搜索附近的蓝牙设备，并清空已搜索到的记录在本地的外围设备信息
+停止搜索附近的蓝牙设备
 
 stopScan()
 
@@ -339,7 +368,7 @@ iOS系统，Android系统
 
 # **connect**
 
-连接指定外围设备
+连接指定外围设备。iOS端无超时判断，android端默认有30秒超时判断
 
 connect({params}, callback(ret, err))
 
@@ -526,7 +555,7 @@ ret：
     peripherals:[{ //数组类型；获取到的蓝牙外围设备信息
       uuid: '',    //字符串类型；获取到的蓝牙设备的uuid
       name: '',    //字符串类型；获取到的蓝牙设备的名字
-      rssi:  ,     //数字类型；获取到的蓝牙设备的信号强度
+      rssi:  ,     //数字类型；获取到的蓝牙设备的信号强度，在 iOS 平台上已 deprecated，可通过 getPeripheralRssi 接口获取
       services:[]  //数组类型；获取到的蓝牙设备的所有服务 UUID 的集合
     },...]
 }
@@ -581,7 +610,7 @@ ret：
     peripherals:[{ //数组类型；获取到的当前处于连接状态的蓝牙外围设备
       uuid: '',    //字符串类型；处于连接状态的蓝牙设备的uuid
       name: '',    //字符串类型；处于连接状态的蓝牙设备的名字
-      rssi:   ,    //数字类型；处于连接状态的蓝牙设备的信号强度
+      rssi:   ,    //数字类型；处于连接状态的蓝牙设备的信号强度，在 iOS 平台上已 deprecated，可通过 getPeripheralRssi 接口获取
       services:[]  //数组类型；处于连接状态的蓝牙设备的所有服务 UUID 的集合
     },...]
 }
@@ -743,7 +772,10 @@ err:
 ```js
 var ble = api.require('ble');
 ble.discoverCharacteristics({
+    
+	serviceUUID:'',
     peripheralUUID: ''
+	
 }, function(ret) {
     if (ret) {
         api.alert({ msg: JSON.stringify(ret) });
@@ -1194,6 +1226,7 @@ writeType
 	- auto：模块自动选择类型
 	- response：有回调
 	- withoutResponse：无回调
+    - signed: 签名 (signed只支持Android)
 
 ## callback(ret, err)
 
@@ -1423,7 +1456,7 @@ ret:
 
 ```js
 var ble = api.require('ble');
-ble.peripheralUUIDs({
+ble.connectPeripherals({
     peripheralUUIDs: ['', '', '']
 }, function(ret, err) {
     if (ret.status) {
@@ -1443,6 +1476,8 @@ iOS系统，Android系统
 # **setSimpleNotify**
 
 根据指定的外围设备 UUID 及其服务 UUID 和特征 UUID 监听数据
+
+注意：本接口同setNotify接口的区别是，本接口只是告诉模块要开始监听指定的蓝牙设备。不在回调函数里返回数据。监听到的数据需要用getAllSimpleNotifyData接口获取。
 
 setSimpleNotify({params}, callback(ret, err))
 
@@ -1567,6 +1602,28 @@ clearAllSimpleNotifyData()
 ```js
 var ble = api.require('ble');
 ble.clearAllSimpleNotifyData();
+```
+
+## 可用性
+
+iOS系统，Android系统
+
+可提供的1.0.0及更高版本
+
+
+<div id="clean"></div>
+
+# **clean**
+
+清空已搜索到的记录在本地的外围设备信息。建议在没有连接的情况下调用，否则与外围设备相关的一系列接口均会失效
+
+clean()
+
+## 示例代码
+
+```js
+var ble = api.require('ble');
+ble.clean();
 ```
 
 ## 可用性
