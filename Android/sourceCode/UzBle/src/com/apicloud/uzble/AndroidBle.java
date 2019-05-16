@@ -116,7 +116,6 @@ public class AndroidBle implements IBle {
 	 * 连接
 	 */
 	public void connect(UZModuleContext moduleContext, String address) {
-		this.mConnectCallBackMap.put(address, moduleContext);
 		/*if ((address == null) || (address.length() == 0)) {
 			connectCallBack(moduleContext, false, 1, "null address");
 			return;
@@ -143,7 +142,7 @@ public class AndroidBle implements IBle {
 	      mConnectCallBackMap.put(address, moduleContext);  
 	        if (mBluetoothAdapter == null || address == null) {
 	            Log.i(TAG, "BluetoothAdapter not initialized or unspecified address.");
-	            connectCallBack(moduleContext, false, 1, "null address");
+	            connectCallBack(moduleContext, false, 1, "null address",null);
 	            return;
 	        }
 	       
@@ -151,7 +150,7 @@ public class AndroidBle implements IBle {
 			final BluetoothDevice device = mBluetoothAdapter.getRemoteDevice(address);
 			if (device == null) {
 		        Log.i(TAG, "Device not found.  Unable to connect.");
-		        connectCallBack(moduleContext, false, 2, "device is null object");
+		        connectCallBack(moduleContext, false, 2, "device is null object",null);
 		        return;
 		          
 		    }
@@ -170,8 +169,10 @@ public class AndroidBle implements IBle {
 
 	        if (Build.VERSION.SDK_INT >= 23) {
 	        	mBluetoothGatt = device.connectGatt(mContext, false, mBluetoothGattCallback);
+	        	AndroidBle.this.mBluetoothGatt.requestMtu(512);
 	        } else {
 	        	mBluetoothGatt = device.connectGatt(mContext, false, mBluetoothGattCallback);
+	        	mBluetoothGatt.requestMtu(512);
 	        }
 	        
 	        
@@ -179,7 +180,7 @@ public class AndroidBle implements IBle {
 	        
 	          Log.i(TAG, "Trying to create a new connection.");
 			} catch (Exception e) {
-				  connectCallBack(moduleContext, false, 2, "Exception");
+				  connectCallBack(moduleContext, false, 2, "Exception",null);
 			} 
 		
 		
@@ -189,7 +190,7 @@ public class AndroidBle implements IBle {
 		for (int i = 0; i < address.length(); i++) {
 			this.mConnectsCallBackMap.put(address.optString(i), moduleContext);
 			if ((address == null) || (address.length() == 0)) {
-				connectCallBack(moduleContext, false, 1, "null adress");
+				connectCallBack(moduleContext, false, 1, "null adress",null);
 				return;
 			}
 			try {
@@ -269,23 +270,38 @@ public class AndroidBle implements IBle {
 			errcodeCallBack(moduleContext, 4);
 		}
 	}
-
+    /***
+     * 解决nordic芯片蓝牙
+     */
 	public void setNotify(UZModuleContext moduleContext, String address, String serviceUUID, String characteristicUUID) {
 		this.mNotifyCallBackMap.put(characteristicUUID, moduleContext);
 		BluetoothGatt bluetoothGatt = (BluetoothGatt) this.mBluetoothGattMap.get(address);
 		if (bluetoothGatt != null) {
 			BluetoothGattCharacteristic characteristic = characteristic(moduleContext, address, serviceUUID, characteristicUUID);
+		      /****************************更改代码*********************/
+            String propertie=properties(characteristic.getProperties());
+            byte[] val=BluetoothGattDescriptor.ENABLE_NOTIFICATION_VALUE;
+            if(propertie.equals("indicate")){
+                    val=BluetoothGattDescriptor.ENABLE_INDICATION_VALUE;
+            }
+            /****************************更改代码*********************/
+			
 			if (characteristic != null) {
 				boolean status = bluetoothGatt.setCharacteristicNotification(characteristic, true);
 				if (status) {
 					BluetoothGattDescriptor descriptor = characteristic.getDescriptor(DESC_CCC);
 					if (descriptor == null) {
 						errcodeCallBack(moduleContext, -1);
-					} else if (!descriptor.setValue(BluetoothGattDescriptor.ENABLE_NOTIFICATION_VALUE)) {
-						errcodeCallBack(moduleContext, -1);
+						/****************************更改代码*********************/
+					} else if (!descriptor.setValue(val)) {
+                        /****************************更改代码*********************/
+						
+					}else if (!descriptor.setValue(BluetoothGattDescriptor.ENABLE_NOTIFICATION_VALUE)) {
+							errcodeCallBack(moduleContext, -1);	
 					} else {
-						bluetoothGatt.writeDescriptor(descriptor);
-					}
+							bluetoothGatt.writeDescriptor(descriptor);
+							
+						}
 				} else {
 					errcodeCallBack(moduleContext, -1);
 				}
@@ -548,7 +564,7 @@ public class AndroidBle implements IBle {
 			
 			 if (newState == 2) {
 					AndroidBle.this.mBluetoothGattMap.put(address, gatt);
-					AndroidBle.this.connectCallBack(moduleContext, true, 0, "success");
+					AndroidBle.this.connectCallBack(moduleContext, true, 0, "success",address);
 					Log.e("走到这里了", "连接成功");
 
 	            } else if (newState == 0) {
@@ -557,12 +573,12 @@ public class AndroidBle implements IBle {
 					AndroidBle.this.mBluetoothGattMap.remove(address);
 					AndroidBle.this.mConnectCallBackMap.remove(address);
 					gatt.close();
-					AndroidBle.this.connectCallBack(moduleContext, false, status, "newState:" + newState);
+					AndroidBle.this.connectCallBack(moduleContext, false, status, "newState:" + newState,address);
 	            }else{
 	            	AndroidBle.this.mBluetoothGattMap.remove(address);
 					AndroidBle.this.mConnectCallBackMap.remove(address);
 					gatt.close();
-					AndroidBle.this.connectCallBack(moduleContext, false, status, "newState:" + newState);
+					AndroidBle.this.connectCallBack(moduleContext, false, status, "newState:" + newState,address);
 	            	
 	            }
 		}
@@ -649,20 +665,30 @@ public class AndroidBle implements IBle {
 		}
 	}
 
-	private void connectCallBack(UZModuleContext moduleContext, boolean status, int errCode, String detailErrorCode) {
+	private void connectCallBack(UZModuleContext moduleContext, boolean status, int errCode, String detailErrorCode,String address ) {
 		JSONObject ret = new JSONObject();
 		JSONObject err = new JSONObject();
 		try {
-			ret.put("status", status);
+			
 			if (status) {
-				Log.e("设备连接成功", "66666666666666666666666666");
-				moduleContext.success(ret, false);
+				 ret.put("status", status);
+				 ret.put("peripheralUUID", address);
 			} else {
-				Log.e("设备连接失败", "失败信息errCode" + errCode + "errCode" + "detailErrorCode" + detailErrorCode);
-				err.put("code", errCode);
+				 ret.put("status", status);
+				 err.put("code", errCode);
+				
+				if (errCode==1) {
+					err.put("peripheralUUID", null);
+				}else {
+					err.put("peripheralUUID", address);
+					
+				}
+				
 				err.put("detailErrorCode", detailErrorCode);
-				moduleContext.error(ret, err, false);
+				
 			}
+			
+			moduleContext.error(ret, err, false);
 		} catch (JSONException e) {
 			e.printStackTrace();
 		}
@@ -860,6 +886,8 @@ public class AndroidBle implements IBle {
 			return "extendedProperties";
 		case 32:
 			return "indicate";
+        case 40:
+            return "indicate";
 		case 16:
 			return "notify";
 		case 64:

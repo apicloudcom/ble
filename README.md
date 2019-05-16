@@ -79,6 +79,7 @@ Description: ble
 
 **不能同时添加的模块：beecloud**
 
+***本模块源码已开源，地址为：https://github.com/apicloudcom/ble***
 
 # 模块接口
 
@@ -201,15 +202,17 @@ ret：
 
 - 类型：JSON 对象
 - 描述：每发现新设备便会回调当前发现的所有蓝牙4.0设备信息
+- 注意：在 iOS 端，有两个 Name，一个是GAP name,一个是一个 advertising name，设备没有连接外设时，获取的perpheral.name会是advertising name，然后当设备第一次连接成功外设后，GAP name就会被缓存下来，以后在连接时，获取的也都是GAP Name, 这样就造成了修改名称后苹果设备不更新的问题 
 - 内部字段：
 
 ```js
 {
-    peripherals:[{ //数组类型；获取到的当前扫描到的蓝牙4.0设备
-      manufacturerData:'',  //字符串类型；蓝牙广播的数据；
-      uuid: '',    //字符串类型；扫描到的蓝牙设备的 UUID
-      name: '',    //字符串类型；扫描到的蓝牙设备的名字
-      rssi:        //数字类型；扫描到的蓝牙设备的信号强度，在 iOS 平台上已 deprecated，可通过 getPeripheralRssi 接口获取
+    peripherals:[{          //数组类型；获取到的当前扫描到的蓝牙4.0设备
+      manufacturerData:'',  //字符串类型；蓝牙广播的数据；自定义数据，需硬件工程师设置，iOS上key值:CBAdvDataManufacturerData
+      uuid: '',             //字符串类型；扫描到的蓝牙设备的 UUID
+      name: '',             //字符串类型；扫描到的蓝牙设备的名字
+      advertisingName: '',  //字符串类型；蓝牙的广告名，仅支持iOS平台
+      rssi:                 //数字类型；扫描到的蓝牙设备的信号强度，在 iOS 平台上已 deprecated，可通过 getPeripheralRssi 接口获取
     },...]
 }
 ```
@@ -390,6 +393,7 @@ ret:
 ```js
 {
      status: true      //布尔类型；是否连接成功，true|false
+     peripheralUUID:'' //字符串类型；uuid，当 err内code 未1时，本参数无值
 }
 ```
 
@@ -1631,3 +1635,4 @@ ble.clean();
 iOS系统，Android系统
 
 可提供的1.0.0及更高版本
+

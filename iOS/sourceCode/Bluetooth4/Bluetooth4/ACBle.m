@@ -120,6 +120,7 @@ static char bleExtendKey;
     }
     if (allCBUUID) {
         [_centralManager scanForPeripheralsWithServices:allCBUUID options:@{CBCentralManagerScanOptionSolicitedServiceUUIDsKey:allCBUUID}];
+        
     } else {
         [_centralManager scanForPeripheralsWithServices:nil options:nil];
     }
@@ -253,8 +254,13 @@ static char bleExtendKey;
     if (!initedAndNoSingle) {//单例模式
         BLESingle *singleBle = [BLESingle sharedInstance];
         __weak typeof (self) weakeSelf = self;
-        [singleBle connect:paramsDict_ callbackBlock:^(BOOL status, int erroCode) {
-            NSDictionary *sendDict = @{@"status":@(status)};
+        [singleBle connect:paramsDict_ callbackBlock:^(BOOL status, int erroCode, NSString *uuid) {
+            NSDictionary *sendDict = nil;
+            if (uuid) {
+                sendDict = @{@"status":@(status),@"peripheralUUID":uuid};
+            } else {
+                sendDict = @{@"status":@(status)};
+            }
             [weakeSelf sendResultEventWithCallbackId:bleConnCbid dataDict:sendDict errDict:@{@"code":@(erroCode)} doDelete:NO];
         }];
         return;
@@ -266,14 +272,18 @@ static char bleExtendKey;
     }
    
     CBPeripheral *peripheral = [_allPeripheral objectForKey:peripheralUUID];
+    NSString *perUUID = peripheral.identifier.UUIDString;
+    if (![perUUID isKindOfClass:[NSString class]] || perUUID.length==0) {
+        perUUID = @"";
+    }
     if (peripheral && [peripheral isKindOfClass:[CBPeripheral class]]) {
         if(peripheral.state  == CBPeripheralStateConnected) {
-            [self callbackCodeInfo:NO withCode:3 andCbid:bleConnCbid doDelete:NO andErrorInfo:nil];
+            [self callbackCodeInfo:NO withCode:3 andCbid:bleConnCbid doDelete:NO andErrorInfo:nil withUDID:perUUID];
         } else {
             [_centralManager connectPeripheral:peripheral options:[NSDictionary dictionaryWithObject:[NSNumber numberWithBool:YES] forKey:CBConnectPeripheralOptionNotifyOnDisconnectionKey]];
         }
     } else {
-        [self callbackCodeInfo:NO withCode:2 andCbid:bleConnCbid doDelete:NO andErrorInfo:nil];
+        [self callbackCodeInfo:NO withCode:2 andCbid:bleConnCbid doDelete:NO andErrorInfo:nil withUDID:perUUID];
     }
 }
 
@@ -1137,13 +1147,6 @@ static char bleExtendKey;
     //NSLog(@"扫描到的设备数量：%ld",advertisementData.count);
     //int connectable =  advertisementData[CBAdvDataIsConnectable];
     //int powerLevel =  advertisementData[CBAdvertisementDataTxPowerLevelKey];
-    //NSString *name =  advertisementData[CBAdvertisementDataLocalNameKey];
-    //自定义数据，可配合硬件工程师获取mac地址
-    NSData *data = [advertisementData objectForKey:@"kCBAdvDataManufacturerData"];
-    NSString *manufacturerStr = [self hexStringFromData:data];//[[NSString alloc] initWithData:data encoding:NSASCIIStringEncoding];
-    if (![manufacturerStr isKindOfClass:[NSString class]] || manufacturerStr.length==0) {
-        manufacturerStr = @"";
-    }
     
     if (!peripheral.identifier) {
         return;
@@ -1152,15 +1155,27 @@ static char bleExtendKey;
     if (![periphoeralUUID isKindOfClass:[NSString class]] || periphoeralUUID.length<=0) {
         return;
     }
+    //一个是GAP name,一个是一个 advertising name，设备没有连接外设时，获取的perpheral.name会是advertising name，然后当设备第一次连接成功外设后，GAP name就会被缓存下来，以后在连接时，获取的也都是GAP Name, 这样就造成了修改名称后苹果设备不更新的问题
+    NSString *advertisingName =  advertisementData[CBAdvertisementDataLocalNameKey];if (![advertisingName isKindOfClass:[NSString class]] || advertisingName.length==0) {
+        advertisingName = @"";
+    }
     if([[_allPeripheral allValues] containsObject:peripheral]) {//更新旧设备的信号强度值
         NSMutableDictionary *targetPerInfo = [_allPeripheralInfo objectForKey:periphoeralUUID];
         if (targetPerInfo && RSSI) {
             [targetPerInfo setObject:RSSI forKey:@"rssi"];
         }
+        [targetPerInfo setValue:advertisingName forKey:@"advertisingName"];
     } else {//发现新设备
         [_allPeripheral setObject:peripheral forKey:periphoeralUUID];
+        //自定义数据，可配合硬件工程师获取mac地址
+        NSData *data = [advertisementData objectForKey:@"kCBAdvDataManufacturerData"];
+        NSString *manufacturerStr = [self hexStringFromData:data];//[[NSString alloc] initWithData:data encoding:NSASCIIStringEncoding];
+        if (![manufacturerStr isKindOfClass:[NSString class]] || manufacturerStr.length==0) {
+            manufacturerStr = @"";
+        }
         NSMutableDictionary *peripheralInfo = [self getAllPeriphoerDict:peripheral];
         [peripheralInfo setValue:manufacturerStr forKey:@"manufacturerData"];
+        [peripheralInfo setValue:advertisingName forKey:@"advertisingName"];
         if (RSSI) {
             [peripheralInfo setValue:RSSI forKey:@"rssi"];
         }
@@ -1170,33 +1185,35 @@ static char bleExtendKey;
 
 #pragma mark 连接外围设备成功后的回调------------------------连接成功的回调
 - (void)centralManager:(CBCentralManager *)central didConnectPeripheral:(CBPeripheral *)peripheral {
+    NSString *perUUID = peripheral.identifier.UUIDString;
+    if (![perUUID isKindOfClass:[NSString class]] || perUUID.length==0) {
+        perUUID = @"";
+    }
     if (bleConnCbid >= 0) {
-        [self callbackCodeInfo:YES withCode:0 andCbid:bleConnCbid doDelete:NO andErrorInfo:nil];
+        [self callbackCodeInfo:YES withCode:0 andCbid:bleConnCbid doDelete:NO andErrorInfo:nil withUDID:perUUID];
     }
     if (connectPeripheralsCbid >= 0) {
         NSMutableDictionary *sendDict = [NSMutableDictionary dictionary];
-        [sendDict setObject:[NSNumber numberWithBool:YES] forKey:@"status"];
-        NSString *perUUID = peripheral.identifier.UUIDString;
-        if ([perUUID isKindOfClass:[NSString class]] && perUUID.length>0) {
-            [sendDict setObject:perUUID forKey:@"peripheralUUID"];
-        }
+        [sendDict setObject:perUUID forKey:@"peripheralUUID"];
+        [sendDict setObject:@(YES) forKey:@"status"];
         [self sendResultEventWithCallbackId:connectPeripheralsCbid dataDict:sendDict errDict:nil doDelete:NO];
     }
 }
 
 #pragma mark 连接外围设备失败后的回调------------------------连接失败的回调
 - (void)centralManager:(CBCentralManager *)central didFailToConnectPeripheral:(CBPeripheral *)peripheral error:(nullable NSError *)error {
+    NSString *perUUID = peripheral.identifier.UUIDString;
+    if (![perUUID isKindOfClass:[NSString class]] || perUUID.length==0) {
+        perUUID = @"";
+    }
     if (bleConnCbid >= 0) {
-        [self callbackCodeInfo:NO withCode:-1 andCbid:bleConnCbid doDelete:NO andErrorInfo:error];
+        [self callbackCodeInfo:NO withCode:-1 andCbid:bleConnCbid doDelete:NO andErrorInfo:error withUDID:perUUID];
     }
     
     if (connectPeripheralsCbid >= 0) {
         NSMutableDictionary *sendDict = [NSMutableDictionary dictionary];
-        [sendDict setObject:[NSNumber numberWithBool:NO] forKey:@"status"];
-        NSString *perUUID = peripheral.identifier.UUIDString;
-        if ([perUUID isKindOfClass:[NSString class]] && perUUID.length>0) {
-            [sendDict setObject:perUUID forKey:@"peripheralUUID"];
-        }
+        [sendDict setObject:@(NO) forKey:@"status"];
+        [sendDict setObject:perUUID forKey:@"peripheralUUID"];
         [self sendResultEventWithCallbackId:connectPeripheralsCbid dataDict:sendDict errDict:nil doDelete:NO];
     }
 }
@@ -1558,6 +1575,29 @@ static char bleExtendKey;
         }
     }
     return allCBUUID;
+}
+//带code的回调
+- (void)callbackCodeInfo:(BOOL)status withCode:(int)code andCbid:(NSInteger)backID doDelete:(BOOL)delete andErrorInfo:(NSError *)error withUDID:(NSString *)udid {
+    if (error) {
+        NSMutableDictionary *errorDict = [NSMutableDictionary dictionary];
+        [errorDict setObject:[NSNumber numberWithInt:code] forKey:@"code"];
+        [errorDict setObject:[NSNumber numberWithInteger:error.code] forKey:@"errorCode"];
+        NSString *domain = error.domain;
+        if ([domain isKindOfClass:[NSString class]] && domain.length>0) {
+            [errorDict setObject:domain forKey:@"domain"];
+        }
+        NSString *description = error.description;
+        if ([description isKindOfClass:[NSString class]] && description.length>0) {
+            [errorDict setObject:description forKey:@"description"];
+        }
+        NSDictionary *userInfo = error.userInfo;
+        if ([userInfo isKindOfClass:[NSDictionary class]] && userInfo.count>0) {
+            [errorDict setObject:userInfo forKey:@"userInfo"];
+        }
+        [self sendResultEventWithCallbackId:backID dataDict:@{@"status":@(status),@"peripheralUUID":udid} errDict:errorDict doDelete:delete];
+        return;
+    }
+    [self sendResultEventWithCallbackId:backID dataDict:@{@"status":@(status),@"peripheralUUID":udid} errDict:@{@"code":@(code)} doDelete:delete];
 }
 //带code的回调
 - (void)callbackCodeInfo:(BOOL)status withCode:(int)code andCbid:(NSInteger)backID doDelete:(BOOL)delete andErrorInfo:(NSError *)error {

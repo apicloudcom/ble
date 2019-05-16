@@ -26,7 +26,7 @@
 
 @property (copy, nonatomic) void(^initCallback)(NSString *state);
 @property (copy, nonatomic) void (^getRssiCallback)(BOOL success, int errorCode, NSNumber *rssi);
-@property (copy, nonatomic) void (^connectCallback)(BOOL success, int erroCode);
+@property (copy, nonatomic) void (^connectCallbackUUID)(BOOL success, int erroCode, NSString *uuid);
 @property (copy, nonatomic) void (^disconnectCallback)(BOOL success, NSString *perid);
 @property (copy, nonatomic) void (^discoverServiceCallback)(BOOL success, NSArray *services, int errorCode);
 @property (copy, nonatomic) void (^discoverCharacteristicsCallback)(BOOL success, NSArray *characteristics, int errorCode);
@@ -212,23 +212,27 @@ static BLESingle *bleInstance = nil;
     }
 }
 
-- (void)connect:(NSDictionary *)paramsDict_  callbackBlock:(void(^)(BOOL status, int erroCode))callback {
-    self.connectCallback = callback;
+- (void)connect:(NSDictionary *)paramsDict_  callbackBlock:(void(^)(BOOL status, int erroCode, NSString *uuid))callback {
+    self.connectCallbackUUID = callback;
     NSString *peripheralUUID = [paramsDict_ stringValueForKey:@"peripheralUUID" defaultValue:nil];
     if (peripheralUUID.length == 0) {
-        callback(NO,1);
+        callback(NO,1,nil);
         return;
     }
     
     CBPeripheral *peripheral = [_allPeripheral objectForKey:peripheralUUID];
+    NSString *perUUID = peripheral.identifier.UUIDString;
+    if (![perUUID isKindOfClass:[NSString class]] || perUUID.length==0) {
+        perUUID = @"";
+    }
     if (peripheral && [peripheral isKindOfClass:[CBPeripheral class]]) {
         if(peripheral.state  == CBPeripheralStateConnected) {
-            callback(NO,3);
+            callback(NO,3,perUUID);
         } else {
             [_centralManager connectPeripheral:peripheral options:[NSDictionary dictionaryWithObject:[NSNumber numberWithBool:YES] forKey:CBConnectPeripheralOptionNotifyOnDisconnectionKey]];
         }
     } else {
-        callback(NO,2);
+        callback(NO,2,perUUID);
     }
 }
 
@@ -927,14 +931,27 @@ static BLESingle *bleInstance = nil;
     if (![periphoeralUUID isKindOfClass:[NSString class]] || periphoeralUUID.length<=0) {
         return;
     }
+    //一个是GAP name,一个是一个 advertising name，设备没有连接外设时，获取的perpheral.name会是advertising name，然后当设备第一次连接成功外设后，GAP name就会被缓存下来，以后在连接时，获取的也都是GAP Name, 这样就造成了修改名称后苹果设备不更新的问题
+    NSString *advertisingName =  advertisementData[CBAdvertisementDataLocalNameKey];if (![advertisingName isKindOfClass:[NSString class]] || advertisingName.length==0) {
+        advertisingName = @"";
+    }
     if([[_allPeripheral allValues] containsObject:peripheral]) {//更新旧设备的信号强度值
         NSMutableDictionary *targetPerInfo = [_allPeripheralInfo objectForKey:periphoeralUUID];
         if (targetPerInfo && RSSI) {
             [targetPerInfo setObject:RSSI forKey:@"rssi"];
         }
+        [targetPerInfo setValue:advertisingName forKey:@"advertisingName"];
     } else {//发现新设备
         [_allPeripheral setObject:peripheral forKey:periphoeralUUID];
         NSMutableDictionary *peripheralInfo = [self getAllPeriphoerDict:peripheral];
+        //自定义数据，可配合硬件工程师获取mac地址
+        NSData *data = [advertisementData objectForKey:@"kCBAdvDataManufacturerData"];
+        NSString *manufacturerStr = [self hexStringFromData:data];//[[NSString alloc] initWithData:data encoding:NSASCIIStringEncoding];
+        if (![manufacturerStr isKindOfClass:[NSString class]] || manufacturerStr.length==0) {
+            manufacturerStr = @"";
+        } 
+        [peripheralInfo setValue:manufacturerStr forKey:@"manufacturerData"];
+        [peripheralInfo setValue:advertisingName forKey:@"advertisingName"];
         if (RSSI) {
             [peripheralInfo setValue:RSSI forKey:@"rssi"];
         }
@@ -944,7 +961,11 @@ static BLESingle *bleInstance = nil;
 
 #pragma mark 连接外围设备成功后的回调------------------------连接成功的回调
 - (void)centralManager:(CBCentralManager *)central didConnectPeripheral:(CBPeripheral *)peripheral {
-    self.connectCallback(YES, 0);
+    NSString *perUUID = peripheral.identifier.UUIDString;
+    if (![perUUID isKindOfClass:[NSString class]] || perUUID.length==0) {
+        perUUID = @"";
+    }
+    self.connectCallbackUUID(YES, 0,perUUID);
     if (self.connectPeripherals) {
         NSString *perUUID = peripheral.identifier.UUIDString;
         self.connectPeripherals(YES, perUUID);
@@ -953,7 +974,11 @@ static BLESingle *bleInstance = nil;
 
 #pragma mark 连接外围设备失败后的回调------------------------连接失败的回调
 - (void)centralManager:(CBCentralManager *)central didFailToConnectPeripheral:(CBPeripheral *)peripheral error:(nullable NSError *)error {
-    self.connectCallback(NO, -1);
+    NSString *perUUID = peripheral.identifier.UUIDString;
+    if (![perUUID isKindOfClass:[NSString class]] || perUUID.length==0) {
+        perUUID = @"";
+    }
+    self.connectCallbackUUID(NO, -1, perUUID);
     
     if (self.connectPeripherals) {
         NSString *perUUID = peripheral.identifier.UUIDString;
@@ -962,6 +987,10 @@ static BLESingle *bleInstance = nil;
 }
 #pragma mark 断开通过uuid指定的外围设备的连接----------------断开连接的回调
 - (void)centralManager:(CBCentralManager *)central didDisconnectPeripheral:(CBPeripheral *)peripheral error:(nullable NSError *)error {
+    NSString *perUUID = peripheral.identifier.UUIDString;
+    if (![perUUID isKindOfClass:[NSString class]] || perUUID.length==0) {
+        perUUID = @"";
+    }
     if (disconnectClick) {
         disconnectClick = NO;
         if (error) {
@@ -970,7 +999,7 @@ static BLESingle *bleInstance = nil;
             self.disconnectCallback(YES, peripheral.identifier.UUIDString);
         }
     } else {
-        self.connectCallback(NO, -1);
+        self.connectCallbackUUID(NO, -1, perUUID);
     }
 }
 

@@ -20,7 +20,7 @@
 - (void)getPeripheralRssi:(NSDictionary *)paramsDict callbackBlock:(void(^)(BOOL success, int errorCode, NSNumber *rssi))callback;
 - (void)isScanning:(NSDictionary *)paramsDict callbackBlock:(void(^)(BOOL status))callback;
 - (void)stopScan;
-- (void)connect:(NSDictionary *)paramsDict callbackBlock:(void(^)(BOOL status, int erroCode))callback;
+- (void)connect:(NSDictionary *)paramsDict callbackBlock:(void(^)(BOOL status, int erroCode, NSString *uuid))callback;
 - (void)disconnect:(NSDictionary *)paramsDict callbackBlock:(void(^)(BOOL status, NSString *perid))callback;
 - (void)getPeripheralState:(NSDictionary *)paramsDict callbackBlock:(void(^)(NSString *perid))callback;
 - (void)isConnected:(NSDictionary *)paramsDict callbackBlock:(void(^)(BOOL status, NSString *perid))callback;

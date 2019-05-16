@@ -239,7 +239,7 @@ public class BleManager {
 		String address = moduleContext.optString("peripheralUUID");
 		this.mConnectCallBackMap.put(address, moduleContext);
 		if ((address == null) || (address.length() == 0)) {
-			connectCallBack(moduleContext, false, 1, "null address");
+			connectCallBack(moduleContext, false, 1, "null address",null);
 			return;
 		}
 		try {
@@ -257,7 +257,7 @@ public class BleManager {
 				}
 			});
 		} catch (Exception e) {
-			connectCallBack(moduleContext, false, 2, "Exception");
+			connectCallBack(moduleContext, false, 2, "Exception",null);
 		}
 	}
 
@@ -271,18 +271,18 @@ public class BleManager {
 			if (status != 0) {
 				gatt.close();
 				mConnectCallBackMap.remove(address);
-				connectCallBack(moduleContext, false, -1, "status:" + status);
+				connectCallBack(moduleContext, false, -1, "status:" + status, address);
 				return;
 			}
 			if (newState == 2) {
 				mBluetoothGattMap.put(address, gatt);
-				connectCallBack(moduleContext, true, 0, "success");
+				connectCallBack(moduleContext, true, 0, "success",address);
 				Log.e("走到这里了", "连接成功");
 			} else if (newState == 0) {
 				gatt.close();
 				mBluetoothGattMap.remove(address);
 				mConnectCallBackMap.remove(address);
-				connectCallBack(moduleContext, false, -1, "newState:" + newState);
+				connectCallBack(moduleContext, false, -1, "newState:" + newState, address);
 			}
 		}
 
@@ -354,7 +354,7 @@ public class BleManager {
 		for (int i = 0; i < address.length(); i++) {
 			this.mConnectsCallBackMap.put(address.optString(i), moduleContext);
 			if ((address == null) || (address.length() == 0)) {
-				connectCallBack(moduleContext, false, 1, "null adress");
+				connectCallBack(moduleContext, false, 1, "null adress",null);
 				return;
 			}
 			try {
@@ -517,19 +517,32 @@ public class BleManager {
 		BluetoothGatt bluetoothGatt = mBluetoothGattMap.get(address);
 		if (bluetoothGatt != null) {
 			BluetoothGattCharacteristic characteristic = characteristic(moduleContext, address, serviceUUID, characteristicUUID);
+			
+            /****************************更改代码*********************/
+            String propertie=properties(characteristic.getProperties());
+            byte[] val=BluetoothGattDescriptor.ENABLE_NOTIFICATION_VALUE;
+            if(propertie.equals("indicate")){
+                    val=BluetoothGattDescriptor.ENABLE_INDICATION_VALUE;
+            }
+            /****************************更改代码*********************/
+			
 			if (characteristic != null) {
 				boolean status = bluetoothGatt.setCharacteristicNotification(characteristic, true);
 				if (status) {
 					BluetoothGattDescriptor descriptor = characteristic.getDescriptor(DESC_CCC);
 					if (descriptor == null) {
 						errcodeCallBack(moduleContext, -1);
+						/****************************更改代码*********************/
+					} else if (!descriptor.setValue(val)) {
+                        /****************************更改代码*********************/
+						
+					}else if (!descriptor.setValue(BluetoothGattDescriptor.ENABLE_NOTIFICATION_VALUE)) {
+							errcodeCallBack(moduleContext, -1);	
 					} else {
-						if (!descriptor.setValue(BluetoothGattDescriptor.ENABLE_NOTIFICATION_VALUE)) {
-							errcodeCallBack(moduleContext, -1);
-						} else {
 							bluetoothGatt.writeDescriptor(descriptor);
+							
 						}
-					}
+					
 				} else {
 					errcodeCallBack(moduleContext, -1);
 				}
@@ -1004,20 +1017,29 @@ public class BleManager {
 	 * @param detailErrorCode
 	 */
 	// 连接状态目前走了这个回调；
-	private void connectCallBack(UZModuleContext moduleContext, boolean status, int errCode, String detailErrorCode) {
+	private void connectCallBack(UZModuleContext moduleContext, boolean status, int errCode, String detailErrorCode,String address) {
 		JSONObject ret = new JSONObject();
 		JSONObject err = new JSONObject();
 		try {
-			ret.put("status", status);
+		
 			if (status) {
-				L.e(TAG, "------------设备连接成功----------------");
-				moduleContext.success(ret, false);
+				ret.put("status", status);
+				ret.put("peripheralUUID", address);
 			} else {
-				L.i(TAG, "设备连接失败" + "失败信息errCode" + errCode + "errCode" + "detailErrorCode" + detailErrorCode);
+				ret.put("status", status);
 				err.put("code", errCode);
+				if (errCode==1) {
+					err.put("peripheralUUID", null);
+				}else {
+					err.put("peripheralUUID", address);
+					
+				}
+				
 				err.put("detailErrorCode", detailErrorCode);
-				moduleContext.error(ret, err, false);
+			
 			}
+			
+			moduleContext.error(ret, err, false);
 		} catch (JSONException e) {
 			e.printStackTrace();
 		}
@@ -1117,6 +1139,9 @@ public class BleManager {
 			return "extendedProperties";
 		case BluetoothGattCharacteristic.PROPERTY_INDICATE:
 			return "indicate";
+			//nordic芯片解决问题;
+        case 40:
+            return "indicate";
 		case BluetoothGattCharacteristic.PROPERTY_NOTIFY:
 			return "notify";
 		case BluetoothGattCharacteristic.PROPERTY_SIGNED_WRITE:
