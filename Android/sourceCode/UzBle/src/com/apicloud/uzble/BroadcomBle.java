@@ -12,6 +12,7 @@ import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
 import android.bluetooth.BluetoothProfile;
 import android.content.Context;
+import android.util.Log;
 
 import com.broadcom.bt.gatt.BluetoothGatt;
 import com.broadcom.bt.gatt.BluetoothGattAdapter;
@@ -64,8 +65,9 @@ public class BroadcomBle implements IBle {
 
 	@Override
 	public void scan(UUID[] uuids) {
+		Log.i("asher", "broadcom scan");
 		if (mBluetoothGatt != null) {
-			if (uuids != null) {
+			if (uuids != null && uuids.length>0) {
 				mBluetoothGatt.startScan(uuids);
 			} else {
 				mBluetoothGatt.startScan();
@@ -395,6 +397,8 @@ public class BroadcomBle implements IBle {
 
 		@Override
 		public void onScanResult(BluetoothDevice device, int rssi, byte[] arg2) {
+			Log.i("asher", "broadcom ble Scan name-- "+ device.getName()+"   address-"+device.getAddress());
+			
 			String strScanRecord = new String(Hex.encodeHex(arg2));
 			mScanBluetoothDeviceMap.put(device.getAddress(), new BleDeviceInfo(device, rssi, strScanRecord));
 		}

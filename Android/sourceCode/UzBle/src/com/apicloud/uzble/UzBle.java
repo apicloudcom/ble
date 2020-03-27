@@ -1,15 +1,19 @@
 package com.apicloud.uzble;
 
+import android.app.Activity;
 import android.bluetooth.BluetoothAdapter;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.os.Message;
 import android.util.Log;
+import android.widget.Toast;
 
 import com.uzmap.pkg.uzcore.UZWebView;
 import com.uzmap.pkg.uzcore.uzmodule.UZModule;
 import com.uzmap.pkg.uzcore.uzmodule.UZModuleContext;
+
 import java.util.Iterator;
 import java.util.Map;
 import java.util.UUID;
@@ -17,12 +21,15 @@ import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+
 public class UzBle extends UZModule {
 
 	private static boolean single;
 	private IBle mIBle;
 	private BluetoothAdapter mBluetoothAdapter;
 	private boolean mIsBleServiceAlive;
+	private static final int REQUEST_ENABLE_BT = 0x1001;
+	private UZModuleContext openContext;
 
 	public UzBle(UZWebView webView) {
 		super(webView);
@@ -69,6 +76,14 @@ public class UzBle extends UZModule {
 			L.i("initManagersingle");
 			BleManager.getInstance().init(moduleContext, this.context());
 		}
+	}
+	
+//	打开蓝牙
+	public void jsmethod_openBluetooth(UZModuleContext uzModuleContext){
+		openContext = uzModuleContext;
+		Intent intent = new Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE);
+		startActivityForResult(intent, REQUEST_ENABLE_BT);
+		
 	}
 	
 	
@@ -601,5 +616,21 @@ public class UzBle extends UZModule {
 			this.mBluetoothAdapter.cancelDiscovery();
 			this.mBluetoothAdapter = null;
 		}
+	}
+	
+	@Override
+	public void onActivityResult(int requestCode, int resultCode, Intent data) {
+		// TODO Auto-generated method stub
+		//蓝牙打开返回
+		if (requestCode == REQUEST_ENABLE_BT) {
+			if (resultCode == ((Activity)context()).RESULT_OK) {
+				MouleUtil.succes(openContext);
+				//打开成功
+			} else {
+				//打开失败
+				MouleUtil.error(openContext, "bluetooth open faile");
+			}
+		}
+		super.onActivityResult(requestCode, resultCode, data);
 	}
 }

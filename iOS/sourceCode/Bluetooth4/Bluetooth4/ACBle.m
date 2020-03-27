@@ -69,6 +69,36 @@ static char bleExtendKey;
 }
 
 #pragma mark - interface -
+- (void)jsmethod_sysAuth:(UZModuleMethodContext *)context {
+    //ios 7.0及以上开始使用
+    CBPeripheralManagerAuthorizationStatus bluetoothStatus = [CBPeripheralManager authorizationStatus];
+    BOOL status = NO;
+    NSString *details = nil;
+    switch (bluetoothStatus) {
+        case CBPeripheralManagerAuthorizationStatusNotDetermined:
+            details = @"notDetermined";
+            status = YES;
+            break;
+        case CBPeripheralManagerAuthorizationStatusRestricted:
+            details = @"restricted";
+            break;
+        case CBPeripheralManagerAuthorizationStatusDenied:
+            details = @"denied";
+            break;
+        case CBPeripheralManagerAuthorizationStatusAuthorized:
+            details = @"authorized";
+            status = YES;
+            break;
+            
+        default:
+            details = @"denied";
+            break;
+    }
+    NSMutableDictionary *returnDic = [NSMutableDictionary dictionary];
+    [returnDic setObject:@(status) forKey:@"status"];
+    [returnDic setObject:details forKey:@"details"];
+    [context callbackWithRet:returnDic err:nil delete:YES];
+}
 
 - (void)initManager:(NSDictionary *)paramsDict_ {
     initCbid = [paramsDict_ integerValueForKey:@"cbId" defaultValue:-1];
@@ -1710,10 +1740,20 @@ static char bleExtendKey;
 }
 
 - (NSString *)hexStringFromData:(NSData *)data {
+    //适配 iOS 13
+    NSUInteger len = [data length];
+    char *chars = (char *)[data bytes];
+    NSMutableString *hexString = [[NSMutableString alloc] init];
+    for (NSUInteger i = 0; i < len; i ++) {
+        [hexString appendString:[NSString stringWithFormat:@"%0.2hhx", chars[i]]];
+    }
+    return hexString;
+    /* iOS 112及以前
     return [[[[NSString stringWithFormat:@"%@",data]
               stringByReplacingOccurrencesOfString: @"<" withString: @""]
              stringByReplacingOccurrencesOfString: @">" withString: @""]
             stringByReplacingOccurrencesOfString: @" " withString: @""];
+     */
 }
 
 - (NSData*)dataFormHexString:(NSString *)hexString {

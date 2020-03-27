@@ -11,6 +11,7 @@ import android.bluetooth.BluetoothGattService;
 import android.bluetooth.BluetoothManager;
 import android.bluetooth.BluetoothDevice;
 import android.content.Context;
+import android.content.DialogInterface.OnMultiChoiceClickListener;
 import android.os.Build;
 import android.util.Log;
 import android.widget.Toast;
@@ -74,7 +75,8 @@ public class AndroidBle implements IBle {
 
 	@SuppressWarnings("deprecation")
 	public void scan(UUID[] uuids) {
-		if (uuids != null) {
+		Log.i("asher", "android scan");
+		if (uuids != null && uuids.length>0) {
 			this.mBluetoothAdapter.startLeScan(uuids, this.mLeScanCallback);
 		} else {
 			this.mBluetoothAdapter.startLeScan(this.mLeScanCallback);
@@ -216,6 +218,7 @@ public class AndroidBle implements IBle {
 			disconnectCallBack(moduleContext, false, address);
 		}
 	}
+	
 
 	private void remove2NotifyMap(String address) {
 		if (this.mSimpleNotifyCallBackMap == null) {
@@ -522,11 +525,13 @@ public class AndroidBle implements IBle {
 
 	private BluetoothAdapter.LeScanCallback mLeScanCallback = new BluetoothAdapter.LeScanCallback() {
 		public void onLeScan(BluetoothDevice device, int rssi, byte[] scanRecord) {
-
+//			Log.i("asher", "ble Scan name-- "+ device.getName()+"   address-"+device.getAddress());
+//			Log.i("asher", "ble Scan parsename-- "+BleUtil.parseAdertisedData(scanRecord).getName());
 			String strScanRecord = new String(Hex.encodeHex(scanRecord));
 			// FIXME:
 			BleDeviceInfo info = new BleDeviceInfo(device, rssi, strScanRecord);
-			info.deviceName = BleUtil.parseAdertisedData(scanRecord).getName();
+//			info.deviceName = BleUtil.parseAdertisedData(scanRecord).getName();
+			info.deviceName = device.getName();
 			mScanBluetoothDeviceMap.put(device.getAddress(), info);
 		}
 	};
@@ -582,6 +587,13 @@ public class AndroidBle implements IBle {
 	            	
 	            }
 		}
+		public void onMtuChanged(BluetoothGatt gatt, int mtu, int status) {
+			if (status == BluetoothGatt.GATT_SUCCESS) {
+		        Log.i("ble", "mtu set success - " + mtu);
+		    }else{
+		    	Log.i("ble", "mtu set error - " + mtu);
+		    }
+		};
 
 		public void onServicesDiscovered(BluetoothGatt gatt, int status) {
 			if (status == 0) {

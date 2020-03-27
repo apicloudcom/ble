@@ -151,7 +151,7 @@ public class BleManager {
 		if (mIsBleServiceAlive) {
 			// 要扫描的蓝牙4.0设备的服务（service）的 UUID（字符串） 组成的数组，若不传则扫描附近的所有支持蓝牙4.0的设备
 			UUID[] uuids = getUUIDS(moduleContext);
-			if (uuids != null) {
+			if (uuids != null && uuids.length>0) {
 				mBluetoothAdapter.startLeScan(uuids, mLeScanCallback);
 			} else {
 				mBluetoothAdapter.startLeScan(mLeScanCallback);
@@ -185,9 +185,12 @@ public class BleManager {
 
 		@Override
 		public void onLeScan(BluetoothDevice device, int rssi, byte[] scanRecord) {
+			
+			Log.i("asher", "bleManager ble Scan name-- "+ device.getName()+"   address-"+device.getAddress());
 			String strScanRecord = new String(Hex.encodeHex(scanRecord));
 			BleDeviceInfo info = new BleDeviceInfo(device, rssi, strScanRecord);
-		     info.deviceName = BleUtil.parseAdertisedData(scanRecord).getName();
+		     info.deviceName = device.getName();
+//		     info.deviceName = BleUtil.parseAdertisedData(scanRecord).getName();
 			mScanBluetoothDeviceMap.put(device.getAddress(), info);
 		}
 	};
@@ -285,6 +288,14 @@ public class BleManager {
 				connectCallBack(moduleContext, false, -1, "newState:" + newState, address);
 			}
 		}
+		
+		public void onMtuChanged(BluetoothGatt gatt, int mtu, int status) {
+			if (status == BluetoothGatt.GATT_SUCCESS) {
+		        Log.i("ble", "mtu set success - " + mtu);
+		    }else{
+		    	Log.i("ble", "mtu set error - " + mtu);
+		    }
+		};
 
 		public void onServicesDiscovered(BluetoothGatt gatt, int status) {
 			if (status == 0) {

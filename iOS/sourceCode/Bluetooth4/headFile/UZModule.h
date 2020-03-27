@@ -15,19 +15,22 @@ typedef enum _KUZStringType {
 } KUZStringType;
 
 @class UZWebView;
+@protocol UIViewControllerRotation;
+@protocol UZWebViewSupportLayer;
 
 @interface UZModule : NSObject
 
-@property (nonatomic, readonly) UZWebView *uzWebView;
-@property (nonatomic, readonly) UIViewController *viewController;
+@property (nonatomic, weak, readonly) UZWebView <UZWebViewSupportLayer>*uzWebView;
+@property (nonatomic, weak, readonly) UIViewController *viewController;
+@property (nonatomic, weak, readonly) UINavigationController *navigationController;
 @property (nonatomic, readonly) NSString *widgetId;
 
 #pragma mark - lifeCycle
 // 重载下面方法来执行初始化和释放操作
-- (id)initWithUZWebView:(UZWebView *)webView;
+- (id)initWithUZWebView:(id)webView;
 - (void)dispose;
 
-#pragma mark - ret event
+#pragma mark - callback
 /**
  执行回调方法返回数据
  
@@ -76,8 +79,9 @@ typedef enum _KUZStringType {
  @param js 要执行的javascript代码
  */
 - (void)evalJs:(NSString *)js;
+- (void)evalJs:(NSString *)js completionHandler:(void (^)(id result, NSError *error))completionHandler;
 
-#pragma mark - utility methods
+#pragma mark - methods
 
 /**
  将包含自定义协议的路径转换成绝对路径
@@ -90,6 +94,29 @@ typedef enum _KUZStringType {
 
 //isAssetsLibrary判断是否为资源库里引用路径
 - (NSString *)getPathWithUZSchemeURL:(NSString *)url isAssetsLibrary:(BOOL*)isAssetsLibrary;
+
+/**
+ 从加密的key.xml文件中获取解密后的数据
+ 
+ @param key 加密字段
+ 
+ @return 解密后的数据，如果获取失败则返回nil
+ */
+- (NSString *)securityValueForKey:(NSString *)key;
+
+/**
+ 获取config.xml里面指定模块的配置信息
+ 
+ @return 模块配置信息
+ */
+- (NSDictionary *)getFeatureByName:(NSString *)name;
+
+/**
+ 当前应用是否支持沉浸式效果，可以在config.xml里面进行配置：<preference name="statusBarAppearance" value="true" />
+ 
+ @return 是否支持沉浸式效果
+ */
+- (BOOL)statusBarAppearance;
 
 /**
  获取指定窗口对象
@@ -114,20 +141,14 @@ typedef enum _KUZStringType {
 - (BOOL)addSubview:(UIView *)view fixedOn:(NSString *)fixedOn fixed:(BOOL)fixed;
 
 /**
- 从加密的key.xml文件中获取解密后的数据
+ 设置视图约束。调用此方法时请确保视图已经添加到父视图上面。
  
- @param key 加密字段
+ @param view 视图
  
- @return 解密后的数据，如果获取失败则返回nil
+ @param rect 视图位置信息，参考api.openFrame方法的rect参数，https://docs.apicloud.com/Client-API/api#27
  */
-- (NSString *)securityValueForKey:(NSString *)key;
-
-/**
- 获取config.xml里面指定模块的配置信息
- 
- @return 模块配置信息
- */
-- (NSDictionary *)getFeatureByName:(NSString *)name;
+- (void)view:(UIView *)view addConstraintsWithRect:(NSDictionary *)rect;
+- (void)view:(UIView *)view updateConstraintsWithRect:(NSDictionary *)rect;
 
 /**
  设置视图是否屏蔽侧滑布局滑动手势
@@ -152,10 +173,25 @@ typedef enum _KUZStringType {
  */
 - (void)sendCustomEvent:(NSString *)name extra:(id)extra;
 
+/**
+ 调试模式下显示错误信息，需在config.xml配置<preference name="debug" value="true"/>
+ 
+ @param message 错误信息
+ */
++ (void)showErrorMessage:(NSString *)message;
 
-#pragma mark - scroll
+/**
+ 如果需要在应用启动时做一些操作，子类可以实现该方法来处理。
+ 
+ @param launchOptions 应用启动时的参数信息
+ */
++ (void)onAppLaunch:(NSDictionary *)launchOptions;
 
-// 当前页面的scrollView，注意不要直接设置其delegate，通过setWebViewScrollDelegate:方法来设置
+@end
+
+@interface UZModule (Scroll)
+
+// 当前页面的scrollView，注意不要直接设置scrollView的delegate，通过setWebViewScrollDelegate:方法来设置
 @property (nonatomic, readonly) UIScrollView *scrollView;
 
 /**
@@ -173,10 +209,53 @@ typedef enum _KUZStringType {
 
 @end
 
+@interface UZModule (Rotation)
 
-@interface UIViewController ()
+/**
+ 设置是否允许旋转，该设置为全局设置
+ 
+ @param autorotate 是否允许旋转，默认为YES
+ */
+- (void)setShouldAutorotate:(BOOL)autorotate;
 
-@property (nonatomic) BOOL slidBackEnabled;     //是否允许滑动返回
-@property (nonatomic) int slidBackType;         //0-整个页面 1-左边缘
+/**
+ 设置屏幕旋转方向
+ 
+ @param param 旋转方向，和api.setScreenOrientation方法参数一致，详情参考文档http://docs.apicloud.com/%E7%AB%AFAPI/api#66
+ */
+- (void)setScreenOrientation:(NSDictionary *)param;
+
+/**
+ 设置控制器旋转代理，监听控制器旋转事件
+ 
+ @param delegate 控制器旋转代理
+ */
+- (void)setViewControllerRotationDelegate:(id<UIViewControllerRotation>)delegate;
 
 @end
+
+
+@interface UZModuleMethodContext : NSObject
+
+@property (nonatomic, weak, readonly) UZModule *module;
+@property (nonatomic, strong, readonly) NSDictionary *param;
+@property (nonatomic, readonly) NSInteger cbId;
+
+- (id)initWithModule:(UZModule *)module param:(NSDictionary *)param callback:(NSInteger)cbId;
+- (void)callbackWithRet:(id)ret err:(id)err delete:(BOOL)del;
+
+@end
+
+
+#define JS_METHOD(method)   \
+- (void)jsmethod_##method
+
+#define JS_METHOD_SYNC(method)   \
+- (id)jsmethod_sync_##method
+
+#define JS_PROPERTY(method)   \
+- (id)jsproperty_##method
+
+extern NSString *const UZModuleMethodPrefix;
+extern NSString *const UZModuleSyncMethodPrefix;
+extern NSString *const UZModulePropertyPrefix;

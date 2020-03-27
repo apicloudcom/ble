@@ -24,11 +24,21 @@
     //var globalUUID = '66:02:89:82:3E:25';
     var globalUUID = 'CF:FD:C5:28:20:26';
     var addrs = null;
+    
+    //打开蓝牙
+    function ble_openBluetooth(){
+	     var ble = api.require('ble');
+		ble.openBluetooth({
+		},function( ret ){
+		   alert('blue open '+JSON.stringify(ret));
+		});
+    }
+    
     //初始化
     function initBle(){
 	     var ble = api.require('ble');
 		ble.initManager({
-		  single:true,
+		  single:false,
 		},function( ret ){
 		   api.alert( {msg:JSON.stringify( ret )});
 		});
@@ -276,6 +286,7 @@
     <div id="wrap">
         <div id="main">
         	<br>
+        	<div class="clickbtn" tapmode="active" onclick="ble_openBluetooth()" >打开蓝牙</div> 
             <div class='itemtitle'>1.初始化蓝牙设备</div>
 			<div class="clickbtn" tapmode="active" onclick="initBle()" >初始化</div> 
 			<div class='itemtitle'>2.开启扫描设备</div>

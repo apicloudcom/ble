@@ -12,6 +12,8 @@ import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
 import android.bluetooth.BluetoothProfile;
 import android.content.Context;
+import android.util.Log;
+
 import com.samsung.android.sdk.bt.gatt.BluetoothGatt;
 import com.samsung.android.sdk.bt.gatt.BluetoothGattAdapter;
 import com.samsung.android.sdk.bt.gatt.BluetoothGattCallback;
@@ -60,8 +62,9 @@ public class SamsungBle implements IBle {
 
 	@Override
 	public void scan(UUID[] uuids) {
+		Log.i("asher", "samsung--scan");
 		if (mBluetoothGatt != null) {
-			if (uuids != null) {
+			if (uuids != null && uuids.length>0) {
 				mBluetoothGatt.startScan(uuids);
 			} else {
 				mBluetoothGatt.startScan();
@@ -391,6 +394,7 @@ public class SamsungBle implements IBle {
 
 		@Override
 		public void onScanResult(BluetoothDevice device, int rssi, byte[] arg2) {
+			Log.i("asher", "samsung ble Scan name-- "+ device.getName()+"   address-"+device.getAddress());
 			String strScanRecord = new String(Hex.encodeHex(arg2));
 			mScanBluetoothDeviceMap.put(device.getAddress(), new BleDeviceInfo(device, rssi, strScanRecord));
 		}
